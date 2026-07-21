@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { CreateEventButton } from "@/components/create-event-button";
+import { TopBar } from "@/components/top-bar";
 import styles from "./app-shell.module.css";
 
 // Material Symbols outlined font is loaded in the root layout; the md-icon
@@ -8,51 +9,58 @@ import styles from "./app-shell.module.css";
 export function AppShell({
   active,
   role = "apprentice",
+  userName = "",
   children,
 }: {
   active: "calendar" | "apprentices" | "settings";
   role?: "apprentice" | "host";
+  userName?: string;
   children: React.ReactNode;
 }) {
   const isHost = role === "host";
 
   return (
     <div className={styles.shell}>
-      <nav className={styles.rail} aria-label="Main navigation">
-        <CreateEventButton />
-        <Link
-          href="/"
-          className={
-            active === "calendar" ? styles.railLinkActive : styles.railLink
-          }
-        >
-          <md-icon>calendar_month</md-icon>
-          {isHost ? "My journal" : "Calendar"}
-        </Link>
-        {isHost && (
+      <TopBar userName={userName} role={role} active={active} />
+      <div className={styles.body}>
+        <nav className={styles.rail} aria-label="Main navigation">
+          <CreateEventButton />
           <Link
-            href="/apprentices"
+            href="/"
             className={
-              active === "apprentices" ? styles.railLinkActive : styles.railLink
+              active === "calendar" ? styles.railLinkActive : styles.railLink
             }
           >
-            <md-icon>group</md-icon>
-            My apprentices
+            <md-icon>calendar_month</md-icon>
+            {isHost ? "My journal" : "Calendar"}
           </Link>
-        )}
-        <Link
-          href="/settings"
-          className={
-            active === "settings" ? styles.railLinkActive : styles.railLink
-          }
-        >
-          <md-icon>settings</md-icon>
-          Settings
-        </Link>
-        <div className={styles.railSpacer} />
-        <SignOutButton iconOnly />
-      </nav>
-      <div className={styles.content}>{children}</div>
+          {isHost && (
+            <Link
+              href="/apprentices"
+              className={
+                active === "apprentices"
+                  ? styles.railLinkActive
+                  : styles.railLink
+              }
+            >
+              <md-icon>group</md-icon>
+              My apprentices
+            </Link>
+          )}
+          <Link
+            href="/settings"
+            className={
+              active === "settings" ? styles.railLinkActive : styles.railLink
+            }
+          >
+            <md-icon>settings</md-icon>
+            Settings
+          </Link>
+          <div className={styles.railSpacer} />
+          <SignOutButton iconOnly />
+        </nav>
+        <div className={styles.content}>{children}</div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -71,12 +78,47 @@ function renderDayHeader(arg: DayHeaderContentArg) {
 }
 
 // Default slot for the sidebar "Create" button: the next full hour today.
-function defaultCreateSlot() {
-  const start = new Date();
-  start.setMinutes(0, 0, 0);
-  start.setHours(start.getHours() + 1);
+function defaultCreateSlot(day?: Date) {
+  const start = day ? new Date(day) : new Date();
+  const now = new Date();
+  start.setHours(now.getHours() + 1, 0, 0, 0);
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return { start, end };
+}
+
+// Monday to friday of the week containing the given date.
+function workweekOf(date: Date) {
+  const monday = new Date(date);
+  monday.setHours(0, 0, 0, 0);
+  const day = monday.getDay();
+  monday.setDate(monday.getDate() + (day === 0 ? -6 : 1 - day));
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+const MOBILE_QUERY = "(max-width: 700px)";
+
+function useIsMobile() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(MOBILE_QUERY);
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(MOBILE_QUERY).matches,
+    () => false,
+  );
 }
 
 export function CalendarView({
@@ -91,9 +133,22 @@ export function CalendarView({
 }) {
   const queryClient = useQueryClient();
   const ownerKey = ownerId ?? "me";
+  const isMobile = useIsMobile();
+  const calendarRef = useRef<FullCalendar | null>(null);
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
+
+  // Switch between the desktop week view and the mobile day view (mock).
+  useEffect(() => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    api.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
+    if (isMobile) {
+      api.gotoDate(selectedDay);
+    }
+  }, [isMobile, selectedDay]);
 
   const { data, isPending } = useQuery({
     queryKey: ["blocks", ownerKey, range?.start.toISOString()],
@@ -183,6 +238,15 @@ export function CalendarView({
     return () => window.removeEventListener("workjournal:create", handleCreate);
   }, [readOnly]);
 
+  const weekDays = useMemo(() => workweekOf(selectedDay), [selectedDay]);
+  const today = new Date();
+
+  function shiftWeek(direction: 1 | -1) {
+    const next = new Date(selectedDay);
+    next.setDate(next.getDate() + 7 * direction);
+    setSelectedDay(next);
+  }
+
   const dialogKey =
     dialog === null
       ? "closed"
@@ -193,6 +257,60 @@ export function CalendarView({
   return (
     <>
       {title && <h1 className={`${styles.heading} headline-small`}>{title}</h1>}
+      {isMobile && (
+        <div className={styles.dayStrip}>
+          <button
+            type="button"
+            className={styles.stripArrow}
+            aria-label="Previous week"
+            onClick={() => shiftWeek(-1)}
+          >
+            <md-icon>chevron_left</md-icon>
+          </button>
+          {weekDays.map((day) => {
+            const selected = isSameDay(day, selectedDay);
+            const isToday = isSameDay(day, today);
+            return (
+              <button
+                key={day.toISOString()}
+                type="button"
+                className={styles.stripDay}
+                aria-pressed={selected}
+                onClick={() => setSelectedDay(day)}
+              >
+                <span
+                  className={
+                    isToday ? styles.stripNameToday : styles.stripName
+                  }
+                >
+                  {day
+                    .toLocaleDateString("en-US", { weekday: "short" })
+                    .toUpperCase()}
+                </span>
+                <span
+                  className={
+                    selected
+                      ? styles.stripNumSelected
+                      : isToday
+                        ? styles.stripNumToday
+                        : styles.stripNum
+                  }
+                >
+                  {day.getDate()}
+                </span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            className={styles.stripArrow}
+            aria-label="Next week"
+            onClick={() => shiftWeek(1)}
+          >
+            <md-icon>chevron_right</md-icon>
+          </button>
+        </div>
+      )}
       <div className={styles.wrapper}>
         {isPending && (
           <div className={styles.loading} role="status" aria-label="Loading">
@@ -200,12 +318,18 @@ export function CalendarView({
           </div>
         )}
         <FullCalendar
+          ref={calendarRef}
           plugins={[timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
-          headerToolbar={{ left: "today prev next title", center: "", right: "" }}
+          headerToolbar={
+            isMobile
+              ? false
+              : { left: "today prev next title", center: "", right: "" }
+          }
           titleFormat={{ year: "numeric", month: "long", day: "numeric" }}
           firstDay={1}
           hiddenDays={[0, 6]}
+          dayHeaders={!isMobile}
           allDaySlot={false}
           slotMinTime="06:00:00"
           slotMaxTime="20:00:00"
@@ -233,6 +357,19 @@ export function CalendarView({
           height="auto"
         />
       </div>
+      {isMobile && !readOnly && (
+        <button
+          type="button"
+          className={styles.fab}
+          aria-label="Create journal entry"
+          onClick={() => {
+            setDialogError(null);
+            setDialog({ mode: "create", ...defaultCreateSlot(selectedDay) });
+          }}
+        >
+          <md-icon>add</md-icon>
+        </button>
+      )}
       {dialog && (
         <EventDialog
           key={dialogKey}
