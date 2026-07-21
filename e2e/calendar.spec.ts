@@ -82,7 +82,7 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
 
   // Host registers, accepts, and opens the apprentice's calendar.
   await register(page, { name: "E2E Host", email: hostEmail, role: "host" });
-  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "My apprentices" }).click();
   await expect(page.getByText("E2E Apprentice")).toBeVisible();
   await page.locator("md-filled-button", { hasText: "Accept" }).click();
   await expect(

@@ -53,6 +53,23 @@ export async function updateProfile(input: unknown) {
   return updated;
 }
 
+// A user may change their own role, e.g. a former apprentice who now
+// supervises apprentices. Their journal history stays on the account either
+// way; access to other calendars is still governed solely by accepted
+// assignments.
+export async function updateRole(role: "apprentice" | "host") {
+  const session = await requireSession();
+  const parsed = z.enum(["apprentice", "host"]).parse(role);
+
+  const [updated] = await db
+    .update(user)
+    .set({ role: parsed, updatedAt: new Date() })
+    .where(eq(user.id, session.user.id))
+    .returning({ id: user.id, role: user.role });
+
+  return updated;
+}
+
 // ---------------------------------------------------------------------------
 // Apprentice side: invite hosts by email, list and remove own invitations.
 // ---------------------------------------------------------------------------

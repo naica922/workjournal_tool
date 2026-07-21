@@ -33,7 +33,7 @@ export default async function ApprenticeCalendarPage(
   }
 
   return (
-    <AppShell active="calendar">
+    <AppShell active="apprentices" role="host">
       <CalendarView
         ownerId={id}
         readOnly
