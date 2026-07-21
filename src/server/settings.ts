@@ -53,7 +53,7 @@ export async function updateProfile(input: unknown) {
 }
 
 // ---------------------------------------------------------------------------
-// Learner side: invite hosts by email, list and remove own invitations.
+// Apprentice side: invite hosts by email, list and remove own invitations.
 // ---------------------------------------------------------------------------
 
 export async function addHostInvite(input: { email: string }) {
@@ -66,7 +66,7 @@ export async function addHostInvite(input: { email: string }) {
 
   const existing = await db.query.hostAssignment.findFirst({
     where: and(
-      eq(hostAssignment.learnerId, session.user.id),
+      eq(hostAssignment.apprenticeId, session.user.id),
       eq(hostAssignment.hostEmail, email),
     ),
   });
@@ -76,7 +76,7 @@ export async function addHostInvite(input: { email: string }) {
 
   const [created] = await db
     .insert(hostAssignment)
-    .values({ learnerId: session.user.id, hostEmail: email })
+    .values({ apprenticeId: session.user.id, hostEmail: email })
     .returning();
   return created;
 }
@@ -84,7 +84,7 @@ export async function addHostInvite(input: { email: string }) {
 export async function listMyHosts() {
   const session = await requireSession();
   const assignments = await db.query.hostAssignment.findMany({
-    where: eq(hostAssignment.learnerId, session.user.id),
+    where: eq(hostAssignment.apprenticeId, session.user.id),
     orderBy: (assignment, { asc }) => [asc(assignment.createdAt)],
   });
   return assignments.map((assignment) => ({
@@ -101,7 +101,7 @@ export async function removeHost(assignmentId: string) {
     .where(
       and(
         eq(hostAssignment.id, assignmentId),
-        eq(hostAssignment.learnerId, session.user.id),
+        eq(hostAssignment.apprenticeId, session.user.id),
       ),
     )
     .returning({ id: hostAssignment.id });
@@ -113,7 +113,7 @@ export async function removeHost(assignmentId: string) {
 
 // ---------------------------------------------------------------------------
 // Host side: see pending invitations addressed to the own email, accept or
-// decline them, and list all learners that granted access.
+// decline them, and list all apprentices that granted access.
 // ---------------------------------------------------------------------------
 
 export async function listMyInvites() {
@@ -121,11 +121,11 @@ export async function listMyInvites() {
   const invites = await db
     .select({
       id: hostAssignment.id,
-      learnerName: user.name,
-      learnerEmail: user.email,
+      apprenticeName: user.name,
+      apprenticeEmail: user.email,
     })
     .from(hostAssignment)
-    .innerJoin(user, eq(user.id, hostAssignment.learnerId))
+    .innerJoin(user, eq(user.id, hostAssignment.apprenticeId))
     .where(
       and(
         eq(hostAssignment.hostEmail, session.user.email.toLowerCase()),
@@ -173,9 +173,9 @@ export async function declineInvite(assignmentId: string) {
   return declined;
 }
 
-export async function listMyLearners() {
+export async function listMyApprentices() {
   const session = await requireSession();
-  const learners = await db
+  const apprentices = await db
     .select({
       assignmentId: hostAssignment.id,
       id: user.id,
@@ -185,12 +185,12 @@ export async function listMyLearners() {
       team: user.team,
     })
     .from(hostAssignment)
-    .innerJoin(user, eq(user.id, hostAssignment.learnerId))
+    .innerJoin(user, eq(user.id, hostAssignment.apprenticeId))
     .where(
       and(
         eq(hostAssignment.hostId, session.user.id),
         eq(hostAssignment.status, "accepted"),
       ),
     );
-  return learners;
+  return apprentices;
 }

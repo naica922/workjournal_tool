@@ -27,10 +27,10 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       // A host role grants nothing by itself: hosts only ever see calendars
-      // of learners that explicitly invited them.
+      // of apprentices that explicitly invited them.
       role: {
         type: "string",
-        defaultValue: "learner",
+        defaultValue: "apprentice",
         input: true,
       },
     },

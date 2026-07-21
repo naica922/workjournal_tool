@@ -21,8 +21,8 @@ test("UC-02: the sign-up link navigates to the registration screen", async ({
 });
 
 test("UC-03: signing in navigates to the calendar", async ({ page }) => {
-  const email = uniqueEmail("learner");
-  await register(page, { name: "E2E Learner", email });
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
   await signOut(page);
 
   await signIn(page, email);
@@ -32,8 +32,8 @@ test("UC-03: signing in navigates to the calendar", async ({ page }) => {
 test("UC-04: the navigation rail leads to the settings screen", async ({
   page,
 }) => {
-  const email = uniqueEmail("learner");
-  await register(page, { name: "E2E Learner", email });
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
 
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();

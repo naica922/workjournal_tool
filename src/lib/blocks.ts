@@ -39,5 +39,5 @@ export type BlockInput = z.infer<typeof blockInputSchema>;
 export const listRangeSchema = z.object({
   start: z.iso.datetime({ offset: true, local: true }),
   end: z.iso.datetime({ offset: true, local: true }),
-  learnerId: z.string().optional(),
+  apprenticeId: z.string().optional(),
 });

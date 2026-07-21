@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addHostInvite, listMyHosts, removeHost } from "@/server/settings";
 import styles from "@/app/settings/settings.module.css";
 
-// Learner view: add hosts by email and see whether they accepted.
+// Apprentice view: add hosts by email and see whether they accepted.
 export function HostsSection() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
