@@ -75,7 +75,9 @@ export function HostDashboard() {
       )}
 
       <section className={styles.card}>
-        <h2 className={`${styles.cardTitle} title-medium`}>My apprentices</h2>
+        <h2 className={`${styles.cardTitle} title-medium`}>
+          Apprentices with access
+        </h2>
         <ul className={styles.list}>
           {(apprentices ?? []).map((apprentice) => (
             <li key={apprentice.assignmentId} className={styles.listItem}>

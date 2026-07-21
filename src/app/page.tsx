@@ -8,10 +8,11 @@ export default async function Home() {
   if (!session) {
     redirect("/login");
   }
+  const role = session.user.role === "host" ? "host" : "apprentice";
 
   return (
-    <AppShell active="calendar">
-      <CalendarView />
+    <AppShell active="calendar" role={role}>
+      <CalendarView title={role === "host" ? "My journal" : undefined} />
     </AppShell>
   );
 }

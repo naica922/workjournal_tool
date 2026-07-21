@@ -7,11 +7,15 @@ import styles from "./app-shell.module.css";
 // component renders the glyph by its name.
 export function AppShell({
   active,
+  role = "apprentice",
   children,
 }: {
-  active: "calendar" | "settings";
+  active: "calendar" | "apprentices" | "settings";
+  role?: "apprentice" | "host";
   children: React.ReactNode;
 }) {
+  const isHost = role === "host";
+
   return (
     <div className={styles.shell}>
       <nav className={styles.rail} aria-label="Main navigation">
@@ -23,8 +27,19 @@ export function AppShell({
           }
         >
           <md-icon>calendar_month</md-icon>
-          Calendar
+          {isHost ? "My journal" : "Calendar"}
         </Link>
+        {isHost && (
+          <Link
+            href="/apprentices"
+            className={
+              active === "apprentices" ? styles.railLinkActive : styles.railLink
+            }
+          >
+            <md-icon>group</md-icon>
+            My apprentices
+          </Link>
+        )}
         <Link
           href="/settings"
           className={
