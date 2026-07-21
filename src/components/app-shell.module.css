@@ -1,0 +1,72 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.rail {
+  width: 5rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  background: var(--md-sys-color-surface-container);
+}
+
+.railSpacer {
+  flex: 1;
+}
+
+.railLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 1rem;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.75rem;
+}
+
+.railLink:hover {
+  text-decoration: none;
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.railLinkActive {
+  composes: railLink;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .shell {
+    flex-direction: column-reverse;
+  }
+
+  .rail {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 0.25rem 0;
+    position: sticky;
+    bottom: 0;
+  }
+
+  .railSpacer {
+    display: none;
+  }
+
+  .content {
+    padding: 0.75rem;
+  }
+}

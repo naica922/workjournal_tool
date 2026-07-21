@@ -1,0 +1,23 @@
+.wrapper {
+  position: relative;
+  flex: 1;
+  background: var(--md-sys-color-surface);
+  border-radius: 1rem;
+  padding: 1rem;
+  min-height: 0;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--md-sys-color-surface) 60%, transparent);
+  border-radius: 1rem;
+  z-index: 5;
+}
+
+.heading {
+  margin: 0 0 0.75rem;
+}

@@ -1,0 +1,89 @@
+/* Material 3 styling for FullCalendar */
+.fc {
+  --fc-border-color: var(--md-sys-color-outline-variant);
+  --fc-today-bg-color: transparent;
+  --fc-now-indicator-color: var(--md-sys-color-error);
+  --fc-page-bg-color: var(--md-sys-color-surface);
+  font-family: inherit;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.375rem;
+  font-weight: 400;
+  color: var(--md-sys-color-on-surface);
+}
+
+.fc .fc-button {
+  background: transparent;
+  border: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-primary);
+  border-radius: 1.25rem;
+  padding: 0.35rem 1rem;
+  font: inherit;
+  font-size: 0.875rem;
+  text-transform: none;
+  box-shadow: none;
+}
+
+.fc .fc-button:hover {
+  background: var(--md-sys-color-surface-container-high);
+  border-color: var(--md-sys-color-outline);
+  color: var(--md-sys-color-primary);
+}
+
+.fc .fc-button:disabled {
+  background: transparent;
+  color: var(--md-sys-color-outline);
+  border-color: var(--md-sys-color-outline-variant);
+}
+
+.fc .fc-button:focus,
+.fc .fc-button:not(:disabled):active {
+  background: var(--md-sys-color-surface-container-highest);
+  border-color: var(--md-sys-color-outline);
+  color: var(--md-sys-color-primary);
+  box-shadow: none;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: var(--md-sys-color-secondary-container);
+  border-color: transparent;
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.fc .fc-col-header-cell {
+  padding: 0.5rem 0;
+}
+
+.fc .fc-col-header-cell-cushion {
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.fc .fc-timegrid-slot-label-cushion {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.75rem;
+}
+
+.fc .fc-day-today .fc-col-header-cell-cushion {
+  color: var(--md-sys-color-primary);
+  font-weight: 700;
+}
+
+.fc .fc-event {
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.fc .fc-timegrid-slot {
+  height: 2.5rem;
+}
+
+.fc .fc-highlight {
+  background: var(--md-sys-color-primary-container);
+  opacity: 0.5;
+}

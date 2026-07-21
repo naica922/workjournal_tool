@@ -38,6 +38,10 @@
   box-sizing: border-box;
 }
 
+md-icon {
+  --md-icon-font: "Material Symbols Outlined";
+}
+
 html,
 body {
   margin: 0;
