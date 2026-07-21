@@ -17,13 +17,19 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     setPending(true);
 
     const data = new FormData(event.currentTarget);
+    const email = String(data.get("email") ?? "");
     const { error } = await signIn.email({
-      email: String(data.get("email") ?? ""),
+      email,
       password: String(data.get("password") ?? ""),
     });
 
     setPending(false);
     if (error) {
+      // 403: the account exists but the email address is not verified yet.
+      if (error.status === 403) {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError(error.message ?? "Sign in failed. Please try again.");
       return;
     }

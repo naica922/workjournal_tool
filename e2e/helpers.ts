@@ -14,6 +14,28 @@ export function textField(page: Page, name: string) {
   );
 }
 
+// Reads the newest verification code Mailpit received for the address.
+async function fetchOtp(page: Page, email: string): Promise<string> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const search = await page.request.get(
+      `http://localhost:8025/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+    );
+    const { messages } = await search.json();
+    if (messages?.length) {
+      const detail = await page.request.get(
+        `http://localhost:8025/api/v1/message/${messages[0].ID}`,
+      );
+      const { Text } = await detail.json();
+      const match = Text.match(/\b(\d{6})\b/);
+      if (match) {
+        return match[1];
+      }
+    }
+    await page.waitForTimeout(500);
+  }
+  throw new Error(`No verification code arrived for ${email}`);
+}
+
 export async function register(
   page: Page,
   {
@@ -35,7 +57,17 @@ export async function register(
     await page.locator('input[name="apprenticeshipStart"]').fill("2024-08-01");
   }
   await page.locator("md-filled-button").click();
-  await expect(page.locator(".fc")).toBeVisible({ timeout: 15_000 });
+
+  // Email verification: enter the code that Mailpit received.
+  await expect(page).toHaveURL(/\/verify-email/, { timeout: 15_000 });
+  const otp = await fetchOtp(page, email);
+  await textField(page, "otp").fill(otp);
+  await page.locator("md-filled-button", { hasText: "Verify" }).click();
+  await expect(page.getByText("Email verified")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await signIn(page, email);
 }
 
 export async function signIn(page: Page, email: string) {

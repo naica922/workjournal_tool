@@ -40,11 +40,16 @@ test("UC-04: the navigation rail leads to the settings screen", async ({
   await expect(page.getByRole("heading", { name: "My hosts" })).toBeVisible();
 });
 
-test("registration rejects a duplicate email address", async ({ page }) => {
+test("registration with a duplicate email does not create a second account", async ({
+  page,
+}) => {
   const email = uniqueEmail("dupe");
   await register(page, { name: "First Account", email });
   await signOut(page);
 
+  // Second registration with the same email but a different password. The
+  // server answers neutrally (anti-enumeration) but must not create an
+  // account or a session.
   await page.goto("/register");
   await page
     .locator('md-outlined-text-field[name="firstName"] input')
@@ -55,11 +60,23 @@ test("registration rejects a duplicate email address", async ({ page }) => {
   await page.locator('md-outlined-text-field[name="email"] input').fill(email);
   await page
     .locator('md-outlined-text-field[name="password"] input')
-    .fill("password123");
+    .fill("different123");
   await page.locator('input[name="birthday"]').fill("2007-03-14");
   await page.locator('input[name="apprenticeshipStart"]').fill("2024-08-01");
   await page.locator("md-filled-button").click();
+  await expect(page).toHaveURL(/\/(verify-email|register)/);
 
-  await expect(page.locator("form")).toContainText(/already exists/i);
-  await expect(page).toHaveURL(/\/register/);
+  // The password of the second attempt must not work...
+  await page.goto("/login");
+  await page.locator('md-outlined-text-field[name="email"] input').fill(email);
+  await page
+    .locator('md-outlined-text-field[name="password"] input')
+    .fill("different123");
+  await page.locator("md-filled-button").click();
+  await expect(page.locator("form")).toContainText(/invalid/i, {
+    timeout: 10_000,
+  });
+
+  // ...while the original account still signs in fine.
+  await signIn(page, email);
 });
