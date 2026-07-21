@@ -24,10 +24,13 @@ test("UC-05/UC-06: an apprentice creates a calendar block with details and sees 
     hasText: "Write IPA documentation",
   });
   await expect(event).toBeVisible({ timeout: 15_000 });
-  // The chosen green color is applied to the event block.
-  await expect(event).toHaveCSS("background-color", "rgb(51, 182, 121)");
-  // The event shows its time range.
-  await expect(event).toContainText("09:00");
+  // The chosen green color is applied to the block (as a pastel mix).
+  await expect(event).toHaveAttribute(
+    "style",
+    /color-mix\(in srgb, (#33b679|rgb\(51, 182, 121\)) 30%, white\)/,
+  );
+  // The block shows its time range like in the mock.
+  await expect(event).toContainText("09:00 – 10:30");
 });
 
 test("a created block can be edited and deleted", async ({ page }) => {

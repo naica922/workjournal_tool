@@ -1,11 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import type {
+  DateSelectArg,
+  EventClickArg,
+  EventContentArg,
+  DayHeaderContentArg,
+} from "@fullcalendar/core";
 import {
   createBlock,
   deleteBlock,
@@ -17,6 +22,62 @@ import type { BlockOccurrence } from "@/lib/recurrence";
 import { EventDialog, type DialogState } from "./event-dialog";
 import styles from "./calendar-view.module.css";
 import "./calendar.css";
+
+const timeFormat = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+const LOCATION_LABEL = { home: "Home", office: "Office" } as const;
+
+// Blocks render like the mock: pastel background, dark text.
+function pastel(color: string) {
+  return `color-mix(in srgb, ${color} 30%, white)`;
+}
+
+function renderEvent(arg: EventContentArg) {
+  const { event } = arg;
+  const time =
+    event.start && event.end
+      ? `${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}`
+      : "";
+  const location = event.extendedProps.location as
+    | keyof typeof LOCATION_LABEL
+    | null;
+  return (
+    <div className="wj-event">
+      <span className="wj-event-title">{event.title}</span>{" "}
+      <span className="wj-event-meta">
+        {time}
+        {location ? ` · ${LOCATION_LABEL[location]}` : ""}
+      </span>
+    </div>
+  );
+}
+
+function renderDayHeader(arg: DayHeaderContentArg) {
+  const weekday = arg.date
+    .toLocaleDateString("en-US", { weekday: "short" })
+    .toUpperCase();
+  return (
+    <div className="wj-day-header">
+      <span className="wj-day-name">{weekday}</span>
+      <span className={arg.isToday ? "wj-day-num wj-day-today" : "wj-day-num"}>
+        {arg.date.getDate()}
+      </span>
+    </div>
+  );
+}
+
+// Default slot for the sidebar "Create" button: the next full hour today.
+function defaultCreateSlot() {
+  const start = new Date();
+  start.setMinutes(0, 0, 0);
+  start.setHours(start.getHours() + 1);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  return { start, end };
+}
 
 export function CalendarView({
   ownerId,
@@ -60,8 +121,10 @@ export function CalendarView({
         title: occurrence.title,
         start: occurrence.start,
         end: occurrence.end,
-        backgroundColor: occurrence.color ?? DEFAULT_BLOCK_COLOR,
+        backgroundColor: pastel(occurrence.color ?? DEFAULT_BLOCK_COLOR),
         borderColor: "transparent",
+        textColor: "#1f1f1f",
+        extendedProps: { location: occurrence.location },
       })),
     [data],
   );
@@ -109,6 +172,17 @@ export function CalendarView({
     [occurrences],
   );
 
+  // The sidebar "Create" button dispatches this event (see CreateEventButton).
+  useEffect(() => {
+    if (readOnly) return;
+    const handleCreate = () => {
+      setDialogError(null);
+      setDialog({ mode: "create", ...defaultCreateSlot() });
+    };
+    window.addEventListener("workjournal:create", handleCreate);
+    return () => window.removeEventListener("workjournal:create", handleCreate);
+  }, [readOnly]);
+
   const dialogKey =
     dialog === null
       ? "closed"
@@ -128,7 +202,8 @@ export function CalendarView({
         <FullCalendar
           plugins={[timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
-          headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+          headerToolbar={{ left: "today prev,next title", center: "", right: "" }}
+          titleFormat={{ year: "numeric", month: "long", day: "numeric" }}
           firstDay={1}
           hiddenDays={[0, 6]}
           allDaySlot={false}
@@ -147,11 +222,9 @@ export function CalendarView({
                 : { start: dates.view.activeStart, end: dates.view.activeEnd },
             )
           }
-          eventTimeFormat={{
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }}
+          eventContent={renderEvent}
+          dayHeaderContent={renderDayHeader}
+          displayEventTime={false}
           slotLabelFormat={{
             hour: "2-digit",
             minute: "2-digit",

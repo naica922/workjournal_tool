@@ -3,15 +3,42 @@
   min-height: 100vh;
 }
 
+.createButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: none;
+  cursor: pointer;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.9rem 1.5rem 0.9rem 1.1rem;
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  align-self: flex-start;
+}
+
+.createButton:hover {
+  background: var(--md-sys-color-surface-container-low);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 .rail {
-  width: 5rem;
+  width: 14rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 0;
-  background: var(--md-sys-color-surface-container);
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--md-sys-color-surface-container-low);
 }
 
 .railSpacer {
@@ -20,13 +47,14 @@
 
 .railLink {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.9rem;
-  border-radius: 1rem;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 2rem;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .railLink:hover {
@@ -57,13 +85,21 @@
     width: 100%;
     flex-direction: row;
     justify-content: space-around;
-    padding: 0.25rem 0;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
     position: sticky;
     bottom: 0;
   }
 
   .railSpacer {
     display: none;
+  }
+
+  .createButton {
+    margin-bottom: 0;
+    padding: 0.6rem 1rem 0.6rem 0.75rem;
+    align-self: center;
   }
 
   .content {
