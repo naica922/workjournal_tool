@@ -24,10 +24,12 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     setSaved(false);
     const data = new FormData(event.currentTarget);
     mutation.mutate({
-      name: String(data.get("name") ?? ""),
-      apprenticeYear: String(data.get("apprenticeYear") ?? "") || null,
-      team: String(data.get("team") ?? "") || null,
+      firstName: String(data.get("firstName") ?? ""),
+      lastName: String(data.get("lastName") ?? ""),
       birthday: String(data.get("birthday") ?? "") || null,
+      apprenticeshipStart:
+        String(data.get("apprenticeshipStart") ?? "") || null,
+      team: String(data.get("team") ?? "") || null,
     });
   }
 
@@ -37,38 +39,44 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     <section className={styles.card}>
       <h2 className={`${styles.cardTitle} title-medium`}>Profile</h2>
       <form className={styles.form} onSubmit={handleSubmit}>
-        <md-outlined-text-field
-          label="Name"
-          name="name"
-          required
-          value={profile.name}
-        />
+        <div className={styles.row}>
+          <md-outlined-text-field
+            label="First name"
+            name="firstName"
+            required
+            value={profile.firstName ?? ""}
+          />
+          <md-outlined-text-field
+            label="Last name"
+            name="lastName"
+            required
+            value={profile.lastName ?? ""}
+          />
+        </div>
         <md-outlined-text-field label="Email" disabled value={profile.email} />
+        <label className={`${styles.dateField} body-small`}>
+          Birth date
+          <input
+            type="date"
+            name="birthday"
+            defaultValue={profile.birthday ?? ""}
+          />
+        </label>
         {isApprentice && (
           <>
-            <div className={styles.row}>
-              <md-outlined-text-field
-                label="Apprenticeship year"
-                name="apprenticeYear"
-                type="number"
-                min="1"
-                max="6"
-                value={profile.apprenticeYear?.toString() ?? ""}
-              />
-              <md-outlined-text-field
-                label="Team"
-                name="team"
-                value={profile.team ?? ""}
-              />
-            </div>
             <label className={`${styles.dateField} body-small`}>
-              Birthday
+              Apprenticeship start date
               <input
                 type="date"
-                name="birthday"
-                defaultValue={profile.birthday ?? ""}
+                name="apprenticeshipStart"
+                defaultValue={profile.apprenticeshipStart ?? ""}
               />
             </label>
+            <md-outlined-text-field
+              label="Team"
+              name="team"
+              value={profile.team ?? ""}
+            />
           </>
         )}
         {mutation.isError && (

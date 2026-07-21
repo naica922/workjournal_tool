@@ -33,6 +33,11 @@ export const auth = betterAuth({
         defaultValue: "apprentice",
         input: true,
       },
+      firstName: { type: "string", required: false, input: true },
+      lastName: { type: "string", required: false, input: true },
+      // Dates as YYYY-MM-DD strings (matching the date columns)
+      birthday: { type: "string", required: false, input: true },
+      apprenticeshipStart: { type: "string", required: false, input: true },
     },
   },
   plugins: [nextCookies()],

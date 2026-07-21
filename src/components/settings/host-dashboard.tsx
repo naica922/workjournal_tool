@@ -8,6 +8,7 @@ import {
   listMyInvites,
   listMyApprentices,
 } from "@/server/settings";
+import { apprenticeshipYear } from "@/lib/apprenticeship";
 import styles from "@/app/settings/settings.module.css";
 
 // Host view: accept or decline invitations and open apprentice calendars.
@@ -86,8 +87,8 @@ export function HostDashboard() {
                 <br />
                 <span className={`${styles.listItemSub} body-small`}>
                   {apprentice.email}
-                  {apprentice.apprenticeYear != null &&
-                    ` · Year ${apprentice.apprenticeYear}`}
+                  {apprentice.apprenticeshipStart &&
+                    ` · Year ${apprenticeshipYear(apprentice.apprenticeshipStart)}`}
                   {apprentice.team && ` · ${apprentice.team}`}
                 </span>
               </span>

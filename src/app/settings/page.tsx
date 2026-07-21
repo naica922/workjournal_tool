@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { requireProfile } from "@/lib/session";
 import { getProfile } from "@/server/settings";
 import { AppShell } from "@/components/app-shell";
 import { ProfileForm } from "@/components/settings/profile-form";
@@ -11,10 +10,7 @@ import styles from "./settings.module.css";
 export const metadata = { title: "Settings - Arbeitsjournal Tool" };
 
 export default async function SettingsPage() {
-  const session = await getSession();
-  if (!session) {
-    redirect("/login");
-  }
+  const session = await requireProfile();
   const profile = await getProfile();
   const role = profile.role === "host" ? "host" : "apprentice";
 

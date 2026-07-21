@@ -1,7 +1,6 @@
 import {
   boolean,
   date,
-  integer,
   pgTable,
   text,
   timestamp,
@@ -24,7 +23,10 @@ export const user = pgTable("user", {
   role: text("role", { enum: ["apprentice", "host"] })
     .notNull()
     .default("apprentice"),
-  apprenticeYear: integer("apprentice_year"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  // Start of the apprenticeship; the current year is derived from it.
+  apprenticeshipStart: date("apprenticeship_start"),
   team: text("team"),
   birthday: date("birthday"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

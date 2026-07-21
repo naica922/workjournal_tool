@@ -47,12 +47,17 @@ test("registration rejects a duplicate email address", async ({ page }) => {
 
   await page.goto("/register");
   await page
-    .locator('md-outlined-text-field[name="name"] input')
-    .fill("Second Account");
+    .locator('md-outlined-text-field[name="firstName"] input')
+    .fill("Second");
+  await page
+    .locator('md-outlined-text-field[name="lastName"] input')
+    .fill("Account");
   await page.locator('md-outlined-text-field[name="email"] input').fill(email);
   await page
     .locator('md-outlined-text-field[name="password"] input')
     .fill("password123");
+  await page.locator('input[name="birthday"]').fill("2007-03-14");
+  await page.locator('input[name="apprenticeshipStart"]').fill("2024-08-01");
   await page.locator("md-filled-button").click();
 
   await expect(page.locator("form")).toContainText(/already exists/i);

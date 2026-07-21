@@ -8,10 +8,11 @@ import { requireSession } from "@/lib/session";
 import { sendHostInviteEmail } from "@/lib/mail";
 
 const profileSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(200),
-  apprenticeYear: z.coerce.number().int().min(1).max(6).nullable(),
-  team: z.string().trim().max(200).nullable(),
+  firstName: z.string().trim().min(1, "First name is required").max(100),
+  lastName: z.string().trim().min(1, "Last name is required").max(100),
   birthday: z.iso.date().nullable(),
+  apprenticeshipStart: z.iso.date().nullable(),
+  team: z.string().trim().max(200).nullable(),
 });
 
 export async function getProfile() {
@@ -21,9 +22,11 @@ export async function getProfile() {
     columns: {
       id: true,
       name: true,
+      firstName: true,
+      lastName: true,
       email: true,
       role: true,
-      apprenticeYear: true,
+      apprenticeshipStart: true,
       team: true,
       birthday: true,
     },
@@ -41,10 +44,49 @@ export async function updateProfile(input: unknown) {
   const [updated] = await db
     .update(user)
     .set({
-      name: data.name,
-      apprenticeYear: data.apprenticeYear,
-      team: data.team,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      name: `${data.firstName} ${data.lastName}`.trim(),
       birthday: data.birthday,
+      apprenticeshipStart: data.apprenticeshipStart,
+      team: data.team,
+      updatedAt: new Date(),
+    })
+    .where(eq(user.id, session.user.id))
+    .returning({ id: user.id });
+
+  return updated;
+}
+
+// Onboarding for accounts created via Google sign-in: they arrive with only
+// a name and email and must provide the remaining required fields once.
+const completeProfileSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "First name is required").max(100),
+    lastName: z.string().trim().min(1, "Last name is required").max(100),
+    birthday: z.iso.date(),
+    role: z.enum(["apprentice", "host"]),
+    apprenticeshipStart: z.iso.date().nullable(),
+  })
+  .refine((data) => data.role !== "apprentice" || !!data.apprenticeshipStart, {
+    message: "Apprenticeship start date is required",
+    path: ["apprenticeshipStart"],
+  });
+
+export async function completeProfile(input: unknown) {
+  const session = await requireSession();
+  const data = completeProfileSchema.parse(input);
+
+  const [updated] = await db
+    .update(user)
+    .set({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      name: `${data.firstName} ${data.lastName}`.trim(),
+      birthday: data.birthday,
+      role: data.role,
+      apprenticeshipStart:
+        data.role === "apprentice" ? data.apprenticeshipStart : null,
       updatedAt: new Date(),
     })
     .where(eq(user.id, session.user.id))
@@ -213,7 +255,7 @@ export async function listMyApprentices() {
       id: user.id,
       name: user.name,
       email: user.email,
-      apprenticeYear: user.apprenticeYear,
+      apprenticeshipStart: user.apprenticeshipStart,
       team: user.team,
     })
     .from(hostAssignment)

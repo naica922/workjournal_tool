@@ -1,18 +1,15 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { hostAssignment, user } from "@/db/schema";
-import { getSession } from "@/lib/session";
+import { requireProfile } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
 import { CalendarView } from "@/components/calendar/calendar-view";
 
 export default async function ApprenticeCalendarPage(
   props: PageProps<"/apprentices/[id]">,
 ) {
-  const session = await getSession();
-  if (!session) {
-    redirect("/login");
-  }
+  const session = await requireProfile();
   const { id } = await props.params;
 
   // Only hosts with an accepted assignment may open an apprentice's calendar.
