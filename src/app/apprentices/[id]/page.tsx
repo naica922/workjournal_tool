@@ -33,7 +33,7 @@ export default async function ApprenticeCalendarPage(
   }
 
   return (
-    <AppShell active="apprentices" role="host">
+    <AppShell active="apprentices" role="host" userName={session.user.name}>
       <CalendarView
         ownerId={id}
         readOnly

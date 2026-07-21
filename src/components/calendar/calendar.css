@@ -178,3 +178,13 @@
   background: var(--md-sys-color-primary-container);
   opacity: 0.5;
 }
+
+/* Near-fullscreen event sheet on mobile like the mock */
+@media (max-width: 700px) {
+  md-dialog {
+    --md-dialog-container-shape: 1rem;
+    min-width: calc(100vw - 1.5rem);
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - 1.5rem);
+  }
+}

@@ -20,6 +20,46 @@
   gap: 1rem;
 }
 
+/* Profile summary card (mobile mock); hidden on desktop */
+.profileHeader {
+  display: none;
+  background: var(--md-sys-color-surface);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.profileAvatar {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.profileName {
+  margin: 0;
+}
+
+.profileMeta {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (max-width: 700px) {
+  .profileHeader {
+    display: flex;
+  }
+}
+
 .cardTitle {
   margin: 0;
 }

@@ -16,7 +16,7 @@ export default async function ApprenticesPage() {
   }
 
   return (
-    <AppShell active="apprentices" role="host">
+    <AppShell active="apprentices" role="host" userName={session.user.name}>
       <div className={styles.page}>
         <h1 className={`${styles.heading} headline-small`}>My apprentices</h1>
         <HostDashboard />

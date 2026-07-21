@@ -1,6 +1,13 @@
 .shell {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .createButton {
@@ -77,29 +84,9 @@
 }
 
 @media (max-width: 700px) {
-  .shell {
-    flex-direction: column-reverse;
-  }
-
+  /* The mocks use a top bar with a drawer on mobile; the sidebar disappears */
   .rail {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    position: sticky;
-    bottom: 0;
-  }
-
-  .railSpacer {
     display: none;
-  }
-
-  .createButton {
-    margin-bottom: 0;
-    padding: 0.6rem 1rem 0.6rem 0.75rem;
-    align-self: center;
   }
 
   .content {

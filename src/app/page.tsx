@@ -11,7 +11,7 @@ export default async function Home() {
   const role = session.user.role === "host" ? "host" : "apprentice";
 
   return (
-    <AppShell active="calendar" role={role}>
+    <AppShell active="calendar" role={role} userName={session.user.name}>
       <CalendarView title={role === "host" ? "My journal" : undefined} />
     </AppShell>
   );

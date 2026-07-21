@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { getProfile } from "@/server/settings";
 import { AppShell } from "@/components/app-shell";
 import { ProfileForm } from "@/components/settings/profile-form";
+import { ProfileHeader } from "@/components/settings/profile-header";
 import { HostsSection } from "@/components/settings/hosts-section";
 import { RoleCard } from "@/components/settings/role-card";
 import styles from "./settings.module.css";
@@ -18,9 +19,14 @@ export default async function SettingsPage() {
   const role = profile.role === "host" ? "host" : "apprentice";
 
   return (
-    <AppShell active="settings" role={role}>
+    <AppShell active="settings" role={role} userName={session.user.name}>
       <div className={styles.page}>
         <h1 className={`${styles.heading} headline-small`}>Settings</h1>
+        <ProfileHeader
+          name={profile.name}
+          email={profile.email}
+          role={role}
+        />
         <ProfileForm profile={profile} />
         {role === "apprentice" && <HostsSection />}
         <RoleCard role={role} />
