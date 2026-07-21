@@ -41,7 +41,7 @@ export function CalendarView({
       listBlocks({
         start: range!.start.toISOString(),
         end: range!.end.toISOString(),
-        learnerId: ownerId,
+        apprenticeId: ownerId,
       }),
   });
 

@@ -6,8 +6,8 @@ import { getSession } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
 import { CalendarView } from "@/components/calendar/calendar-view";
 
-export default async function LearnerCalendarPage(
-  props: PageProps<"/learners/[id]">,
+export default async function ApprenticeCalendarPage(
+  props: PageProps<"/apprentices/[id]">,
 ) {
   const session = await getSession();
   if (!session) {
@@ -15,14 +15,14 @@ export default async function LearnerCalendarPage(
   }
   const { id } = await props.params;
 
-  // Only hosts with an accepted assignment may open a learner's calendar.
+  // Only hosts with an accepted assignment may open an apprentice's calendar.
   const [assignment] = await db
-    .select({ learnerName: user.name })
+    .select({ apprenticeName: user.name })
     .from(hostAssignment)
-    .innerJoin(user, eq(user.id, hostAssignment.learnerId))
+    .innerJoin(user, eq(user.id, hostAssignment.apprenticeId))
     .where(
       and(
-        eq(hostAssignment.learnerId, id),
+        eq(hostAssignment.apprenticeId, id),
         eq(hostAssignment.hostId, session.user.id),
         eq(hostAssignment.status, "accepted"),
       ),
@@ -37,7 +37,7 @@ export default async function LearnerCalendarPage(
       <CalendarView
         ownerId={id}
         readOnly
-        title={`${assignment.learnerName}'s calendar`}
+        title={`${assignment.apprenticeName}'s calendar`}
       />
     </AppShell>
   );

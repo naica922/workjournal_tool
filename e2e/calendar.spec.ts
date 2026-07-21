@@ -6,11 +6,11 @@ import {
   uniqueEmail,
 } from "./helpers";
 
-test("UC-05/UC-06: a learner creates a calendar block with details and sees it in the calendar", async ({
+test("UC-05/UC-06: an apprentice creates a calendar block with details and sees it in the calendar", async ({
   page,
 }) => {
-  const email = uniqueEmail("learner");
-  await register(page, { name: "E2E Learner", email });
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
 
   await dragCreateSlot(page);
 
@@ -31,8 +31,8 @@ test("UC-05/UC-06: a learner creates a calendar block with details and sees it i
 });
 
 test("a created block can be edited and deleted", async ({ page }) => {
-  const email = uniqueEmail("learner");
-  await register(page, { name: "E2E Learner", email });
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
 
   await dragCreateSlot(page);
   await textField(page, "title").fill("Initial title");
@@ -55,14 +55,14 @@ test("a created block can be edited and deleted", async ({ page }) => {
   await expect(page.locator(".fc-event")).toHaveCount(0, { timeout: 15_000 });
 });
 
-test("host flow: invited host accepts and sees the learner's calendar read-only", async ({
+test("host flow: invited host accepts and sees the apprentice's calendar read-only", async ({
   page,
 }) => {
-  const learnerEmail = uniqueEmail("learner");
+  const apprenticeEmail = uniqueEmail("apprentice");
   const hostEmail = uniqueEmail("host");
 
-  // Learner creates a block and invites the host.
-  await register(page, { name: "E2E Learner", email: learnerEmail });
+  // Apprentice creates a block and invites the host.
+  await register(page, { name: "E2E Apprentice", email: apprenticeEmail });
   await dragCreateSlot(page);
   await textField(page, "title").fill("Visible to host");
   await page.locator("md-filled-button", { hasText: "Save" }).click();
@@ -77,17 +77,17 @@ test("host flow: invited host accepts and sees the learner's calendar read-only"
   await page.locator('md-icon-button[title="Sign out"]').click();
   await expect(page).toHaveURL(/\/login/);
 
-  // Host registers, accepts, and opens the learner's calendar.
+  // Host registers, accepts, and opens the apprentice's calendar.
   await register(page, { name: "E2E Host", email: hostEmail, role: "host" });
   await page.getByRole("link", { name: "Settings" }).click();
-  await expect(page.getByText("E2E Learner")).toBeVisible();
+  await expect(page.getByText("E2E Apprentice")).toBeVisible();
   await page.locator("md-filled-button", { hasText: "Accept" }).click();
   await expect(
     page.locator("md-outlined-button", { hasText: "Open calendar" }),
   ).toBeVisible();
   await page.locator("md-outlined-button", { hasText: "Open calendar" }).click();
 
-  await expect(page.getByRole("heading", { name: /E2E Learner's calendar/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /E2E Apprentice's calendar/ })).toBeVisible();
   const event = page.locator(".fc-event", { hasText: "Visible to host" });
   await expect(event).toBeVisible({ timeout: 15_000 });
 

@@ -1,8 +1,8 @@
 # Arbeitsjournal Tool
 
 A work-journal web app for apprentices (Lernende) and their hosts, built as part of
-a trial IPA at Google Switzerland. Learners document their work in a weekly
-calendar; hosts get an overview of the calendars of all learners assigned to them.
+a trial IPA at Google Switzerland. Apprentices document their work in a weekly
+calendar; hosts get an overview of the calendars of all apprentices assigned to them.
 
 ## Tech stack
 

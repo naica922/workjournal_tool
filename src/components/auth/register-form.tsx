@@ -21,7 +21,7 @@ export function RegisterForm() {
       name: String(data.get("name") ?? ""),
       email: String(data.get("email") ?? ""),
       password: String(data.get("password") ?? ""),
-      role: String(data.get("role") ?? "learner"),
+      role: String(data.get("role") ?? "apprentice"),
     });
 
     setPending(false);
@@ -70,8 +70,8 @@ export function RegisterForm() {
           <div className={styles.roleGroup} role="radiogroup" aria-label="Role">
             <span className="body-medium">I am a:</span>
             <label className={styles.roleOption}>
-              <md-radio name="role" value="learner" checked />
-              <span className="body-medium">Learner</span>
+              <md-radio name="role" value="apprentice" checked />
+              <span className="body-medium">Apprentice</span>
             </label>
             <label className={styles.roleOption}>
               <md-radio name="role" value="host" />

@@ -10,14 +10,14 @@ import { expandOccurrences, type BlockOccurrence } from "@/lib/recurrence";
 type SessionData = Awaited<ReturnType<typeof requireSession>>;
 
 // A user may read a calendar if it is their own, or if they are an accepted
-// host of that learner. Checked on the server for every request.
+// host of that apprentice. Checked on the server for every request.
 async function assertCanViewCalendar(session: SessionData, ownerId: string) {
   if (session.user.id === ownerId) {
     return;
   }
   const assignment = await db.query.hostAssignment.findFirst({
     where: and(
-      eq(hostAssignment.learnerId, ownerId),
+      eq(hostAssignment.apprenticeId, ownerId),
       eq(hostAssignment.hostId, session.user.id),
       eq(hostAssignment.status, "accepted"),
     ),
@@ -30,11 +30,11 @@ async function assertCanViewCalendar(session: SessionData, ownerId: string) {
 export async function listBlocks(input: {
   start: string;
   end: string;
-  learnerId?: string;
+  apprenticeId?: string;
 }): Promise<BlockOccurrence[]> {
   const session = await requireSession();
-  const { start, end, learnerId } = listRangeSchema.parse(input);
-  const ownerId = learnerId ?? session.user.id;
+  const { start, end, apprenticeId } = listRangeSchema.parse(input);
+  const ownerId = apprenticeId ?? session.user.id;
   await assertCanViewCalendar(session, ownerId);
 
   const rangeStart = new Date(start);

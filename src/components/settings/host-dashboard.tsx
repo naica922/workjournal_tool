@@ -6,11 +6,11 @@ import {
   acceptInvite,
   declineInvite,
   listMyInvites,
-  listMyLearners,
+  listMyApprentices,
 } from "@/server/settings";
 import styles from "@/app/settings/settings.module.css";
 
-// Host view: accept or decline invitations and open learner calendars.
+// Host view: accept or decline invitations and open apprentice calendars.
 export function HostDashboard() {
   const queryClient = useQueryClient();
 
@@ -18,14 +18,14 @@ export function HostDashboard() {
     queryKey: ["my-invites"],
     queryFn: () => listMyInvites(),
   });
-  const { data: learners } = useQuery({
-    queryKey: ["my-learners"],
-    queryFn: () => listMyLearners(),
+  const { data: apprentices } = useQuery({
+    queryKey: ["my-apprentices"],
+    queryFn: () => listMyApprentices(),
   });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["my-invites"] });
-    queryClient.invalidateQueries({ queryKey: ["my-learners"] });
+    queryClient.invalidateQueries({ queryKey: ["my-apprentices"] });
   };
 
   const acceptMutation = useMutation({
@@ -48,10 +48,10 @@ export function HostDashboard() {
             {invites!.map((invite) => (
               <li key={invite.id} className={styles.listItem}>
                 <span className={`${styles.listItemText} body-medium`}>
-                  {invite.learnerName}
+                  {invite.apprenticeName}
                   <br />
                   <span className={`${styles.listItemSub} body-small`}>
-                    {invite.learnerEmail}
+                    {invite.apprenticeEmail}
                   </span>
                 </span>
                 <md-text-button
@@ -75,30 +75,30 @@ export function HostDashboard() {
       )}
 
       <section className={styles.card}>
-        <h2 className={`${styles.cardTitle} title-medium`}>My learners</h2>
+        <h2 className={`${styles.cardTitle} title-medium`}>My apprentices</h2>
         <ul className={styles.list}>
-          {(learners ?? []).map((learner) => (
-            <li key={learner.assignmentId} className={styles.listItem}>
+          {(apprentices ?? []).map((apprentice) => (
+            <li key={apprentice.assignmentId} className={styles.listItem}>
               <span className={`${styles.listItemText} body-medium`}>
-                {learner.name}
+                {apprentice.name}
                 <br />
                 <span className={`${styles.listItemSub} body-small`}>
-                  {learner.email}
-                  {learner.apprenticeYear != null &&
-                    ` · Year ${learner.apprenticeYear}`}
-                  {learner.team && ` · ${learner.team}`}
+                  {apprentice.email}
+                  {apprentice.apprenticeYear != null &&
+                    ` · Year ${apprentice.apprenticeYear}`}
+                  {apprentice.team && ` · ${apprentice.team}`}
                 </span>
               </span>
-              <Link href={`/learners/${learner.id}`}>
+              <Link href={`/apprentices/${apprentice.id}`}>
                 <md-outlined-button type="button">
                   Open calendar
                 </md-outlined-button>
               </Link>
             </li>
           ))}
-          {learners?.length === 0 && (
+          {apprentices?.length === 0 && (
             <li className={`${styles.empty} body-medium`}>
-              No learners yet. Ask your learners to add your email address in
+              No apprentices yet. Ask your apprentices to add your email address in
               their settings.
             </li>
           )}

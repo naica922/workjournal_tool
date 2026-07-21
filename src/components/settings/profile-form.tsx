@@ -31,7 +31,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     });
   }
 
-  const isLearner = profile.role === "learner";
+  const isApprentice = profile.role === "apprentice";
 
   return (
     <section className={styles.card}>
@@ -44,7 +44,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           value={profile.name}
         />
         <md-outlined-text-field label="Email" disabled value={profile.email} />
-        {isLearner && (
+        {isApprentice && (
           <>
             <div className={styles.row}>
               <md-outlined-text-field

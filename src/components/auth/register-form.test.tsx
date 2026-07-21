@@ -21,14 +21,14 @@ describe("RegisterForm", () => {
     }
   });
 
-  it("offers the learner and host roles with learner preselected", () => {
+  it("offers the apprentice and host roles with apprentice preselected", () => {
     const { container } = render(<RegisterForm />);
 
-    const learner = container.querySelector('md-radio[value="learner"]');
+    const apprentice = container.querySelector('md-radio[value="apprentice"]');
     const host = container.querySelector('md-radio[value="host"]');
-    expect(learner).toBeInTheDocument();
+    expect(apprentice).toBeInTheDocument();
     expect(host).toBeInTheDocument();
-    expect(learner).toHaveAttribute("checked");
+    expect(apprentice).toHaveAttribute("checked");
     expect(host).not.toHaveAttribute("checked");
   });
 

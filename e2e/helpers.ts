@@ -19,8 +19,8 @@ export async function register(
   {
     name,
     email,
-    role = "learner",
-  }: { name: string; email: string; role?: "learner" | "host" },
+    role = "apprentice",
+  }: { name: string; email: string; role?: "apprentice" | "host" },
 ) {
   await page.goto("/register");
   await textField(page, "name").fill(name);

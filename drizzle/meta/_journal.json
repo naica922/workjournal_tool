@@ -8,6 +8,20 @@
       "when": 1784295316360,
       "tag": "0000_equal_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784629939560,
+      "tag": "0001_apprentice_rename",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784629997896,
+      "tag": "0002_rename_fk_constraint",
+      "breakpoints": true
     }
   ]
 }

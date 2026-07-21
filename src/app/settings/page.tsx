@@ -21,7 +21,7 @@ export default async function SettingsPage() {
       <div className={styles.page}>
         <h1 className={`${styles.heading} headline-small`}>Settings</h1>
         <ProfileForm profile={profile} />
-        {profile.role === "learner" ? <HostsSection /> : <HostDashboard />}
+        {profile.role === "apprentice" ? <HostsSection /> : <HostDashboard />}
       </div>
     </AppShell>
   );

@@ -12,7 +12,7 @@ import {
 // ---------------------------------------------------------------------------
 // Better Auth tables (user, session, account, verification)
 // The user table is extended with the role and the profile fields a host
-// needs to identify a learner (apprentice year, team, birthday).
+// needs to identify a apprentice (apprentice year, team, birthday).
 // ---------------------------------------------------------------------------
 
 export const user = pgTable("user", {
@@ -21,9 +21,9 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  role: text("role", { enum: ["learner", "host"] })
+  role: text("role", { enum: ["apprentice", "host"] })
     .notNull()
-    .default("learner"),
+    .default("apprentice"),
   apprenticeYear: integer("apprentice_year"),
   team: text("team"),
   birthday: date("birthday"),
@@ -72,7 +72,7 @@ export const verification = pgTable("verification", {
 });
 
 // ---------------------------------------------------------------------------
-// Host assignments: a learner invites a host by email. The invite is pending
+// Host assignments: a apprentice invites a host by email. The invite is pending
 // until the host accepts it in their settings. hostId is filled in on accept,
 // so invites can target hosts that have not registered yet.
 // ---------------------------------------------------------------------------
@@ -81,7 +81,7 @@ export const hostAssignment = pgTable(
   "host_assignment",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    learnerId: text("learner_id")
+    apprenticeId: text("apprentice_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     hostEmail: text("host_email").notNull(),
@@ -92,15 +92,15 @@ export const hostAssignment = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("host_assignment_learner_email_idx").on(
-      table.learnerId,
+    uniqueIndex("host_assignment_apprentice_email_idx").on(
+      table.apprenticeId,
       table.hostEmail,
     ),
   ],
 );
 
 // ---------------------------------------------------------------------------
-// Calendar blocks: one row per journal entry of a learner.
+// Calendar blocks: one row per journal entry of a apprentice.
 // Recurring events store the recurrence on the block itself; occurrences are
 // expanded when the calendar is read.
 // ---------------------------------------------------------------------------
