@@ -18,6 +18,7 @@ import type {
   EventContentArg,
   DayHeaderContentArg,
 } from "@fullcalendar/core";
+import type { DateClickArg } from "@fullcalendar/interaction";
 import {
   createBlock,
   deleteBlock,
@@ -217,6 +218,21 @@ export function CalendarView({
     [readOnly],
   );
 
+  // On mobile, dragging scrolls the page - a tap on a free slot creates an
+  // entry there instead (one hour by default).
+  const handleDateClick = useCallback(
+    (click: DateClickArg) => {
+      if (readOnly || !isMobile) return;
+      setDialogError(null);
+      setDialog({
+        mode: "create",
+        start: click.date,
+        end: new Date(click.date.getTime() + 60 * 60 * 1000),
+      });
+    },
+    [readOnly, isMobile],
+  );
+
   const handleEventClick = useCallback(
     (click: EventClickArg) => {
       const occurrence = occurrences.get(click.event.id);
@@ -334,10 +350,11 @@ export function CalendarView({
           slotMinTime="06:00:00"
           slotMaxTime="20:00:00"
           nowIndicator
-          selectable={!readOnly}
+          selectable={!readOnly && !isMobile}
           selectMirror
           events={events}
           select={handleSelect}
+          dateClick={handleDateClick}
           eventClick={handleEventClick}
           datesSet={(dates) =>
             setRange((current) =>
@@ -374,6 +391,7 @@ export function CalendarView({
         <EventDialog
           key={dialogKey}
           state={dialog}
+          quick={isMobile}
           readOnly={readOnly}
           pending={saveMutation.isPending || deleteMutation.isPending}
           error={dialogError}

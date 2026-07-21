@@ -26,7 +26,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     mutation.mutate({
       firstName: String(data.get("firstName") ?? ""),
       lastName: String(data.get("lastName") ?? ""),
-      birthday: String(data.get("birthday") ?? "") || null,
+      birthday: String(data.get("birthday") ?? ""),
       apprenticeshipStart:
         String(data.get("apprenticeshipStart") ?? "") || null,
       team: String(data.get("team") ?? "") || null,
@@ -59,6 +59,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           <input
             type="date"
             name="birthday"
+            required
             defaultValue={profile.birthday ?? ""}
           />
         </label>
