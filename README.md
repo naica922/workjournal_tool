@@ -69,6 +69,47 @@ The Playwright Firefox build additionally requires the
 [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
 on Windows.
 
+## Deployment (Vercel + Neon)
+
+The app deploys as a standard Next.js project. Recommended free-tier setup:
+
+### 1. Database (Neon)
+
+1. Create a project at [neon.tech](https://neon.tech) and copy the Postgres
+   connection string.
+2. Apply the migrations once from your machine:
+   ```bash
+   DATABASE_URL="<neon connection string>" npm run db:migrate
+   ```
+   (PowerShell: `$env:DATABASE_URL="<...>"; npm run db:migrate`)
+
+### 2. App (Vercel)
+
+1. Push this repository to GitHub and import it at
+   [vercel.com/new](https://vercel.com/new) - the Next.js defaults are fine.
+2. Set the environment variables in the Vercel project settings:
+
+| Variable | Value in production |
+| --- | --- |
+| `DATABASE_URL` | Neon connection string |
+| `BETTER_AUTH_SECRET` | Fresh random secret (`npx @better-auth/cli secret`) |
+| `BETTER_AUTH_URL` | `https://<your-app>.vercel.app` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | From Google Cloud Console |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | From your mail provider (e.g. Resend or Brevo SMTP) |
+| `MAIL_FROM` | e.g. `Arbeitsjournal Tool <noreply@yourdomain>` |
+
+3. Deploy. Every merge to `main` deploys automatically afterwards.
+
+### 3. After the first deploy
+
+- Google Cloud Console → your OAuth client → add the production redirect URI
+  `https://<your-app>.vercel.app/api/auth/callback/google`.
+- While the OAuth consent screen is in test mode, only accounts listed under
+  *Zielgruppe → Testnutzer* can use Google sign-in; email/password login works
+  for everyone.
+- Mailpit is local-only; without real `SMTP_*` values, invitations are still
+  created but no email is sent.
+
 ## Branching model
 
 `main` is always stable. Each work package is developed on a `feat/...` branch
