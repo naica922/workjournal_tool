@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import styles from "./page.module.css";
+import { AppShell } from "@/components/app-shell";
+import { CalendarView } from "@/components/calendar/calendar-view";
 
 export default async function Home() {
   const session = await getSession();
@@ -10,16 +10,8 @@ export default async function Home() {
   }
 
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <h1 className="headline-small">
-          Welcome, {session.user.name || session.user.email}
-        </h1>
-        <p className="body-medium">
-          The weekly calendar will appear here in the next step.
-        </p>
-        <SignOutButton />
-      </main>
-    </div>
+    <AppShell active="calendar">
+      <CalendarView />
+    </AppShell>
   );
 }
