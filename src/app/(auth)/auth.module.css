@@ -93,6 +93,12 @@
   text-align: center;
 }
 
+.success {
+  margin: 0;
+  color: var(--md-sys-color-tertiary);
+  text-align: center;
+}
+
 .divider {
   display: flex;
   align-items: center;

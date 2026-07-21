@@ -11,6 +11,30 @@ const transporter = nodemailer.createTransport({
     : undefined,
 });
 
+export async function sendVerificationCodeEmail({
+  to,
+  otp,
+}: {
+  to: string;
+  otp: string;
+}) {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM ?? "Arbeitsjournal Tool <noreply@localhost>",
+    to,
+    subject: `${otp} is your verification code`,
+    text: [
+      `Hi,`,
+      ``,
+      `Your Arbeitsjournal Tool verification code is:`,
+      ``,
+      `${otp}`,
+      ``,
+      `Enter this code on the verification page to activate your account.`,
+      `The code expires in 5 minutes. If you did not sign up, you can ignore this email.`,
+    ].join("\n"),
+  });
+}
+
 export async function sendHostInviteEmail({
   to,
   apprenticeName,

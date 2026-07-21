@@ -21,9 +21,10 @@ export function RegisterForm() {
     const firstName = String(data.get("firstName") ?? "").trim();
     const lastName = String(data.get("lastName") ?? "").trim();
 
-    const { error } = await signUp.email({
+    const email = String(data.get("email") ?? "");
+    const { data: result, error } = await signUp.email({
       name: `${firstName} ${lastName}`.trim(),
-      email: String(data.get("email") ?? ""),
+      email,
       password: String(data.get("password") ?? ""),
       role,
       firstName,
@@ -38,6 +39,11 @@ export function RegisterForm() {
     setPending(false);
     if (error) {
       setError(error.message ?? "Registration failed. Please try again.");
+      return;
+    }
+    // Without a session token the account still needs email verification.
+    if (!result?.token) {
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       return;
     }
     router.push("/");
