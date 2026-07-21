@@ -9,6 +9,7 @@ import styles from "@/app/settings/settings.module.css";
 export function HostsSection() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const { data: hosts } = useQuery({
     queryKey: ["my-hosts"],
@@ -20,11 +21,19 @@ export function HostsSection() {
 
   const addMutation = useMutation({
     mutationFn: addHostInvite,
-    onSuccess: () => {
+    onSuccess: (result) => {
       invalidate();
       setError(null);
+      setNotice(
+        result.emailSent
+          ? `Invitation email sent to ${result.hostEmail}.`
+          : "Invitation created, but the email could not be sent.",
+      );
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: Error) => {
+      setNotice(null);
+      setError(e.message);
+    },
   });
 
   const removeMutation = useMutation({
@@ -59,6 +68,7 @@ export function HostsSection() {
         </md-filled-tonal-button>
       </form>
       {error && <p className={`${styles.error} body-medium`}>{error}</p>}
+      {notice && <p className={`${styles.success} body-medium`}>{notice}</p>}
       <ul className={styles.list}>
         {(hosts ?? []).map((host) => (
           <li key={host.id} className={styles.listItem}>
