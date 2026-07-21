@@ -13,5 +13,13 @@ services:
     volumes:
       - workjournal-pgdata:/var/lib/postgresql/data
 
+  mail:
+    image: axllent/mailpit
+    container_name: workjournal-mail
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI to inspect sent mails
+
 volumes:
   workjournal-pgdata:

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { hostAssignment, user } from "@/db/schema";
 import { requireSession } from "@/lib/session";
+import { sendHostInviteEmail } from "@/lib/mail";
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
@@ -78,7 +79,21 @@ export async function addHostInvite(input: { email: string }) {
     .insert(hostAssignment)
     .values({ apprenticeId: session.user.id, hostEmail: email })
     .returning();
-  return created;
+
+  // The invitation exists either way; a mail failure must not lose it.
+  let emailSent = true;
+  try {
+    await sendHostInviteEmail({
+      to: email,
+      apprenticeName: session.user.name,
+      apprenticeEmail: session.user.email,
+    });
+  } catch (error) {
+    console.error("Failed to send host invite email", error);
+    emailSent = false;
+  }
+
+  return { ...created, emailSent };
 }
 
 export async function listMyHosts() {
