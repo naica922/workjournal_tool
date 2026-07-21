@@ -22,12 +22,17 @@ export async function register(
     role = "apprentice",
   }: { name: string; email: string; role?: "apprentice" | "host" },
 ) {
+  const [firstName, ...rest] = name.split(" ");
   await page.goto("/register");
-  await textField(page, "name").fill(name);
+  await textField(page, "firstName").fill(firstName);
+  await textField(page, "lastName").fill(rest.join(" ") || "Test");
   await textField(page, "email").fill(email);
   await textField(page, "password").fill(PASSWORD);
+  await page.locator('input[name="birthday"]').fill("2007-03-14");
   if (role === "host") {
     await page.locator('md-radio[value="host"]').click();
+  } else {
+    await page.locator('input[name="apprenticeshipStart"]').fill("2024-08-01");
   }
   await page.locator("md-filled-button").click();
   await expect(page.locator(".fc")).toBeVisible({ timeout: 15_000 });

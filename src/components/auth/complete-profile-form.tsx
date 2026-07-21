@@ -2,56 +2,53 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
-import { signUp } from "@/lib/auth-client";
+import { useMutation } from "@tanstack/react-query";
+import { completeProfile } from "@/server/settings";
 import styles from "@/app/(auth)/auth.module.css";
 
-export function RegisterForm() {
+// Shown once after the first Google sign-in: collects the fields the
+// email/password registration asks for.
+export function CompleteProfileForm({
+  initialFirstName,
+  initialLastName,
+}: {
+  initialFirstName: string;
+  initialLastName: string;
+}) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const [role, setRole] = useState<"apprentice" | "host">("apprentice");
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const mutation = useMutation({
+    mutationFn: completeProfile,
+    onSuccess: () => {
+      router.push("/");
+      router.refresh();
+    },
+  });
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-
     const data = new FormData(event.currentTarget);
-    const firstName = String(data.get("firstName") ?? "").trim();
-    const lastName = String(data.get("lastName") ?? "").trim();
-
-    const { error } = await signUp.email({
-      name: `${firstName} ${lastName}`.trim(),
-      email: String(data.get("email") ?? ""),
-      password: String(data.get("password") ?? ""),
-      role,
-      firstName,
-      lastName,
+    mutation.mutate({
+      firstName: String(data.get("firstName") ?? ""),
+      lastName: String(data.get("lastName") ?? ""),
       birthday: String(data.get("birthday") ?? ""),
+      role,
       apprenticeshipStart:
         role === "apprentice"
-          ? String(data.get("apprenticeshipStart") ?? "")
-          : undefined,
+          ? String(data.get("apprenticeshipStart") ?? "") || null
+          : null,
     });
-
-    setPending(false);
-    if (error) {
-      setError(error.message ?? "Registration failed. Please try again.");
-      return;
-    }
-    router.push("/");
-    router.refresh();
   }
 
   return (
     <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="register-title">
-        <h1 id="register-title" className={`${styles.title} headline-small`}>
-          Create your account
+      <section className={styles.card} aria-labelledby="complete-title">
+        <h1 id="complete-title" className={`${styles.title} headline-small`}>
+          Complete your profile
         </h1>
         <p className={`${styles.subtitle} body-medium`}>
-          Register for the Arbeitsjournal Tool
+          A few details before you get started
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
@@ -60,32 +57,17 @@ export function RegisterForm() {
               class={styles.field}
               label="First name"
               name="firstName"
-              type="text"
               required
+              value={initialFirstName}
             />
             <md-outlined-text-field
               class={styles.field}
               label="Last name"
               name="lastName"
-              type="text"
               required
+              value={initialLastName}
             />
           </div>
-          <md-outlined-text-field
-            class={styles.field}
-            label="Email"
-            name="email"
-            type="email"
-            required
-          />
-          <md-outlined-text-field
-            class={styles.field}
-            label="Password"
-            name="password"
-            type="password"
-            required
-            supporting-text="At least 8 characters"
-          />
           <label className={`${styles.dateField} body-small`}>
             Birth date
             <input type="date" name="birthday" required />
@@ -117,15 +99,15 @@ export function RegisterForm() {
             </label>
           )}
 
-          {error && <p className={`${styles.error} body-medium`}>{error}</p>}
-          <md-filled-button type="submit" disabled={pending}>
-            {pending ? "Creating account..." : "Sign up"}
+          {mutation.isError && (
+            <p className={`${styles.error} body-medium`}>
+              {(mutation.error as Error).message}
+            </p>
+          )}
+          <md-filled-button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Saving..." : "Continue"}
           </md-filled-button>
         </form>
-
-        <p className={`${styles.switchAuth} body-medium`}>
-          Already have an account? <Link href="/login">Sign in</Link>
-        </p>
       </section>
     </main>
   );
