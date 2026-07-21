@@ -58,9 +58,16 @@ redirect URI `http://localhost:3000/api/auth/callback/google` and set
 | `npm run lint` | ESLint |
 | `npm run format` | Prettier |
 | `npm test` | Vitest unit tests |
+| `npm run test:e2e` | Playwright end-to-end tests (Chromium) |
+| `npm run test:e2e:firefox` | Playwright end-to-end tests (Firefox)* |
 | `npm run db:generate` | Generate Drizzle migration from schema changes |
 | `npm run db:migrate` | Apply migrations to the database |
 | `npm run db:studio` | Open Drizzle Studio to inspect the database |
+
+*Before the first e2e run, download the browsers with `npx playwright install chromium firefox`.
+The Playwright Firefox build additionally requires the
+[Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
+on Windows.
 
 ## Branching model
 
