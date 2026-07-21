@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { CreateEventButton } from "@/components/create-event-button";
 import styles from "./app-shell.module.css";
 
 // Material Symbols outlined font is loaded in the root layout; the md-icon
@@ -14,6 +15,7 @@ export function AppShell({
   return (
     <div className={styles.shell}>
       <nav className={styles.rail} aria-label="Main navigation">
+        <CreateEventButton />
         <Link
           href="/"
           className={
