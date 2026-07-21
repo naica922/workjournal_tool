@@ -12,7 +12,7 @@ export default async function Home() {
 
   return (
     <AppShell active="calendar" role={role} userName={session.user.name}>
-      <CalendarView title={role === "host" ? "My journal" : undefined} />
+      <CalendarView />
     </AppShell>
   );
 }
