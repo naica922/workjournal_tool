@@ -7,10 +7,18 @@
   font-family: inherit;
 }
 
+/* One horizontal row: Today pill, chevrons, then the week title */
+.fc .fc-toolbar-chunk {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .fc .fc-toolbar-title {
   font-size: 1.375rem;
   font-weight: 400;
   color: var(--md-sys-color-on-surface);
+  margin-left: 0.75rem;
 }
 
 .fc .fc-button {
@@ -49,6 +57,37 @@
   background: var(--md-sys-color-secondary-container);
   border-color: transparent;
   color: var(--md-sys-color-on-secondary-container);
+}
+
+/* Chevrons like the mock: borderless round icon buttons */
+.fc .fc-prev-button,
+.fc .fc-next-button {
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  border-radius: 50%;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fc .fc-prev-button:hover,
+.fc .fc-next-button:hover {
+  background: var(--md-sys-color-surface-container-high);
+  border: none;
+  color: var(--md-sys-color-on-surface);
+}
+
+.fc .fc-prev-button:focus,
+.fc .fc-next-button:focus,
+.fc .fc-prev-button:not(:disabled):active,
+.fc .fc-next-button:not(:disabled):active {
+  background: var(--md-sys-color-surface-container-highest);
+  border: none;
+  color: var(--md-sys-color-on-surface);
 }
 
 .fc .fc-col-header-cell {

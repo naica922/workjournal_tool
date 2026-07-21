@@ -202,7 +202,7 @@ export function CalendarView({
         <FullCalendar
           plugins={[timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
-          headerToolbar={{ left: "today prev,next title", center: "", right: "" }}
+          headerToolbar={{ left: "today prev next title", center: "", right: "" }}
           titleFormat={{ year: "numeric", month: "long", day: "numeric" }}
           firstDay={1}
           hiddenDays={[0, 6]}
