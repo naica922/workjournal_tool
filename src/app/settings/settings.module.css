@@ -1,0 +1,136 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 40rem;
+}
+
+.heading {
+  margin: 0;
+}
+
+.card {
+  background: var(--md-sys-color-surface);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardTitle {
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.row > * {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dateField input {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 0.25rem;
+  padding: 0.9rem 0.75rem;
+  font: inherit;
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.inviteRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inviteRow md-outlined-text-field {
+  flex: 1;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.listItemText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.listItemSub {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.chip {
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.chipPending {
+  composes: chip;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.chipAccepted {
+  composes: chip;
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+
+.error {
+  color: var(--md-sys-color-error);
+  margin: 0;
+}
+
+.success {
+  color: var(--md-sys-color-tertiary);
+  margin: 0;
+}
+
+.empty {
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0;
+}
