@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16
+    container_name: workjournal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: workjournal
+      POSTGRES_PASSWORD: workjournal
+      POSTGRES_DB: workjournal
+    ports:
+      # 5433 on the host: a WSL-internal Postgres already occupies localhost:5432
+      - "5433:5432"
+    volumes:
+      - workjournal-pgdata:/var/lib/postgresql/data
+
+volumes:
+  workjournal-pgdata:
