@@ -10,7 +10,7 @@ import { sendHostInviteEmail } from "@/lib/mail";
 const profileSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(100),
   lastName: z.string().trim().min(1, "Last name is required").max(100),
-  birthday: z.iso.date().nullable(),
+  birthday: z.iso.date({ error: "Birth date is required" }),
   apprenticeshipStart: z.iso.date().nullable(),
   team: z.string().trim().max(200).nullable(),
 });

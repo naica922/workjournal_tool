@@ -25,6 +25,7 @@ export function EventDialog({
   readOnly,
   pending,
   error,
+  quick = false,
   onClose,
   onSave,
   onDelete,
@@ -33,6 +34,9 @@ export function EventDialog({
   readOnly: boolean;
   pending: boolean;
   error: string | null;
+  // Skip open/close animations (used on mobile, where the dialog is a
+  // near-fullscreen sheet and must close reliably).
+  quick?: boolean;
   onClose: () => void;
   onSave: (input: BlockInput, blockId?: string) => void;
   onDelete: (blockId: string) => void;
@@ -50,9 +54,15 @@ export function EventDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
     dialog.show();
+    // The page behind the dialog must not scroll while it is open.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const handleClosed = () => onClose();
     dialog.addEventListener("closed", handleClosed);
-    return () => dialog.removeEventListener("closed", handleClosed);
+    return () => {
+      dialog.removeEventListener("closed", handleClosed);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [onClose]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -85,7 +95,7 @@ export function EventDialog({
   }
 
   return (
-    <md-dialog ref={dialogRef}>
+    <md-dialog ref={dialogRef} quick={quick || undefined}>
       <div slot="headline">
         {readOnly
           ? "Journal entry"
