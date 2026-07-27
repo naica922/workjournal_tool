@@ -155,3 +155,40 @@ test("projects: assigned events aggregate hours in the projects view", async ({
   await card.getByRole("button", { name: /Coop event/ }).click();
   await expect(card.getByText("Coop planning")).toBeVisible();
 });
+
+test("drag reschedules an event", async ({ page }) => {
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
+
+  await dragCreateSlot(page);
+  await textField(page, "title").fill("Movable");
+  await page.locator("md-filled-button", { hasText: "Save" }).click();
+  // Exclude the drag mirror FullCalendar shows during an interaction.
+  const event = page.locator(".fc-event:not(.fc-event-mirror)", {
+    hasText: "Movable",
+  });
+  await expect(event).toBeVisible({ timeout: 15_000 });
+  await expect(event).toContainText("09:00 – 10:30");
+
+  // One hour in pixels = distance between the 09:00 and 10:00 slot lanes.
+  const slot9 = await page
+    .locator('td.fc-timegrid-slot-lane[data-time="09:00:00"]')
+    .boundingBox();
+  const slot10 = await page
+    .locator('td.fc-timegrid-slot-lane[data-time="10:00:00"]')
+    .boundingBox();
+  const hourPx = slot10!.y - slot9!.y;
+
+  // Drag the event down by about one hour; it now starts an hour later
+  // (exact minute depends on 15-minute snapping).
+  const box = await event.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + 4);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + 4 + hourPx, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  await expect(event).toContainText(/10:(00|15) – 11:(30|45)/, {
+    timeout: 15_000,
+  });
+});

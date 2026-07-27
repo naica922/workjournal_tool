@@ -17,12 +17,15 @@ import type {
   EventClickArg,
   EventContentArg,
   DayHeaderContentArg,
+  EventDropArg,
 } from "@fullcalendar/core";
+import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import type { DateClickArg } from "@fullcalendar/interaction";
 import {
   createBlock,
   deleteBlock,
   listBlocks,
+  rescheduleBlock,
   updateBlock,
 } from "@/server/blocks";
 import { listProjects } from "@/server/projects";
@@ -243,6 +246,17 @@ export function CalendarView({
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["blocks", ownerKey] });
 
+  // Clears the persisted selection mirror (unselectAuto is off).
+  const clearSelection = useCallback(() => {
+    calendarRef.current?.getApi().unselect();
+  }, []);
+
+  const closeDialog = useCallback(() => {
+    setDialog(null);
+    setDialogError(null);
+    clearSelection();
+  }, [clearSelection]);
+
   const saveMutation = useMutation({
     mutationFn: ({ input, blockId }: { input: BlockInput; blockId?: string }) =>
       blockId ? updateBlock(blockId, input) : createBlock(input),
@@ -250,6 +264,7 @@ export function CalendarView({
       invalidate();
       setDialog(null);
       setDialogError(null);
+      clearSelection();
     },
     onError: (error: Error) => setDialogError(error.message),
   });
@@ -264,6 +279,43 @@ export function CalendarView({
     onError: (error: Error) => setDialogError(error.message),
   });
 
+  const rescheduleMutation = useMutation({
+    mutationFn: ({
+      blockId,
+      startDeltaMs,
+      endDeltaMs,
+    }: {
+      blockId: string;
+      startDeltaMs: number;
+      endDeltaMs: number;
+    }) => rescheduleBlock(blockId, startDeltaMs, endDeltaMs),
+    onSuccess: invalidate,
+    // On failure FullCalendar's own revert already restored the event.
+    onError: () => invalidate(),
+  });
+
+  // Drag to another time (eventDrop) or resize to extend (eventResize):
+  // shift the underlying block by the delta. Recurring series move together.
+  const handleEventChange = useCallback(
+    (info: EventDropArg | EventResizeDoneArg) => {
+      const occurrence = occurrences.get(info.event.id);
+      if (!occurrence) {
+        info.revert();
+        return;
+      }
+      const oldStart = info.oldEvent.start?.getTime() ?? 0;
+      const oldEnd = info.oldEvent.end?.getTime() ?? 0;
+      const newStart = info.event.start?.getTime() ?? oldStart;
+      const newEnd = info.event.end?.getTime() ?? oldEnd;
+      rescheduleMutation.mutate({
+        blockId: occurrence.id,
+        startDeltaMs: newStart - oldStart,
+        endDeltaMs: newEnd - oldEnd,
+      });
+    },
+    [occurrences, rescheduleMutation],
+  );
+
   const handleSelect = useCallback(
     (selection: DateSelectArg) => {
       if (readOnly) return;
@@ -273,8 +325,8 @@ export function CalendarView({
     [readOnly],
   );
 
-  // On mobile, dragging scrolls the page - a tap on a free slot creates an
-  // entry there instead (one hour by default).
+  // On mobile a normal tap on a free slot creates a one-hour entry; a
+  // long-press-drag (handled by select) lets the user choose the range.
   const handleDateClick = useCallback(
     (click: DateClickArg) => {
       if (readOnly || !isMobile) return;
@@ -406,12 +458,23 @@ export function CalendarView({
           slotMaxTime="20:00:00"
           snapDuration="00:15:00"
           nowIndicator
-          selectable={!readOnly && !isMobile}
+          selectable={!readOnly}
           selectMirror
+          // Keep the selection highlight until the dialog is dismissed.
+          unselectAuto={false}
+          // On touch, a long press starts a drag-selection so normal touch
+          // still scrolls the calendar.
+          selectLongPressDelay={350}
+          eventLongPressDelay={350}
+          editable={!readOnly}
+          eventStartEditable={!readOnly}
+          eventDurationEditable={!readOnly}
           events={events}
           select={handleSelect}
           dateClick={handleDateClick}
           eventClick={handleEventClick}
+          eventDrop={handleEventChange}
+          eventResize={handleEventChange}
           datesSet={(dates) =>
             setRange((current) =>
               current?.start.getTime() === dates.view.activeStart.getTime()
@@ -452,10 +515,7 @@ export function CalendarView({
           readOnly={readOnly}
           pending={saveMutation.isPending || deleteMutation.isPending}
           error={dialogError}
-          onClose={() => {
-            setDialog(null);
-            setDialogError(null);
-          }}
+          onClose={closeDialog}
           onSave={(input, blockId) => saveMutation.mutate({ input, blockId })}
           onDelete={(blockId) => deleteMutation.mutate(blockId)}
         />

@@ -99,6 +99,40 @@ export async function updateBlock(id: string, input: unknown) {
   return updated;
 }
 
+// Drag-and-drop reschedule / resize: shift the block's start and end by the
+// given deltas (in ms). For recurring blocks this moves the whole series.
+export async function rescheduleBlock(
+  id: string,
+  startDeltaMs: number,
+  endDeltaMs: number,
+) {
+  const session = await requireSession();
+
+  const block = await db.query.calendarBlock.findFirst({
+    where: and(
+      eq(calendarBlock.id, id),
+      eq(calendarBlock.userId, session.user.id),
+    ),
+  });
+  if (!block) {
+    throw new Error("Block not found or not yours");
+  }
+
+  const newStart = new Date(new Date(block.start).getTime() + startDeltaMs);
+  const newEnd = new Date(new Date(block.end).getTime() + endDeltaMs);
+  if (newEnd <= newStart) {
+    throw new Error("End time must be after the start time");
+  }
+
+  const [updated] = await db
+    .update(calendarBlock)
+    .set({ start: newStart, end: newEnd, updatedAt: new Date() })
+    .where(and(eq(calendarBlock.id, id), eq(calendarBlock.userId, session.user.id)))
+    .returning({ id: calendarBlock.id });
+
+  return updated;
+}
+
 export async function deleteBlock(id: string) {
   const session = await requireSession();
 
