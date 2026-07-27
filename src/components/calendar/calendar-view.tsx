@@ -11,6 +11,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type {
   DateSelectArg,
@@ -175,15 +176,17 @@ export function CalendarView({
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
 
-  // Switch between the desktop week view and the mobile day view (mock).
+  // Mobile always shows the single-day view; desktop keeps whatever view the
+  // user picked (week or month) and only resets when coming from mobile.
   useEffect(() => {
     const api = calendarRef.current?.getApi();
     if (!api) return;
-    api.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
     if (isMobile) {
+      api.changeView("timeGridDay");
       api.gotoDate(selectedDay);
+    } else if (api.view.type === "timeGridDay") {
+      api.changeView("timeGridWeek");
     }
-    // Open scrolled to the work day (00:00-06:00 is above, evening below).
     api.scrollToTime("06:00:00");
   }, [isMobile, selectedDay]);
 
@@ -322,21 +325,38 @@ export function CalendarView({
     (selection: DateSelectArg) => {
       if (readOnly) return;
       setDialogError(null);
+      // Month-view selections are all-day; give them a default 09:00-10:00
+      // timed slot on the first selected day.
+      if (selection.allDay) {
+        const day = new Date(selection.start);
+        day.setHours(9, 0, 0, 0);
+        setDialog({
+          mode: "create",
+          start: day,
+          end: new Date(day.getTime() + 60 * 60 * 1000),
+        });
+        return;
+      }
       setDialog({ mode: "create", start: selection.start, end: selection.end });
     },
     [readOnly],
   );
 
-  // On mobile a normal tap on a free slot creates a one-hour entry; a
-  // long-press-drag (handled by select) lets the user choose the range.
+  // A tap on mobile, or a click on a day in month view, creates a one-hour
+  // entry (at that time, or 09:00 for a whole-day cell).
   const handleDateClick = useCallback(
     (click: DateClickArg) => {
-      if (readOnly || !isMobile) return;
+      if (readOnly) return;
+      if (!isMobile && click.view.type !== "dayGridMonth") return;
       setDialogError(null);
+      const start = new Date(click.date);
+      if (click.allDay) {
+        start.setHours(9, 0, 0, 0);
+      }
       setDialog({
         mode: "create",
-        start: click.date,
-        end: new Date(click.date.getTime() + 60 * 60 * 1000),
+        start,
+        end: new Date(start.getTime() + 60 * 60 * 1000),
       });
     },
     [readOnly, isMobile],
@@ -444,13 +464,28 @@ export function CalendarView({
         )}
         <FullCalendar
           ref={calendarRef}
-          plugins={[timeGridPlugin, interactionPlugin]}
+          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
           headerToolbar={
             isMobile
               ? false
-              : { left: "today prev next title", center: "", right: "" }
+              : {
+                  left: "today prev next title",
+                  center: "",
+                  right: "timeGridWeek,dayGridMonth",
+                }
           }
+          buttonText={{
+            today: "Today",
+            week: "Week",
+            month: "Month",
+          }}
+          views={{
+            dayGridMonth: {
+              titleFormat: { year: "numeric", month: "long" },
+              fixedWeekCount: false,
+            },
+          }}
           titleFormat={{ year: "numeric", month: "long", day: "numeric" }}
           firstDay={1}
           hiddenDays={[0, 6]}
