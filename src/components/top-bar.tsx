@@ -15,7 +15,13 @@ export function TopBar({
 }: {
   userName: string;
   role: "apprentice" | "host";
-  active: "calendar" | "projects" | "export" | "apprentices" | "settings";
+  active:
+    | "calendar"
+    | "todos"
+    | "projects"
+    | "export"
+    | "apprentices"
+    | "settings";
 }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -44,6 +50,12 @@ export function TopBar({
           },
         ]
       : [
+          {
+            href: "/todos",
+            key: "todos",
+            icon: "checklist",
+            label: "To-dos",
+          },
           {
             href: "/projects",
             key: "projects",

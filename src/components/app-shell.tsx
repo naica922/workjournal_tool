@@ -12,7 +12,13 @@ export function AppShell({
   userName = "",
   children,
 }: {
-  active: "calendar" | "projects" | "export" | "apprentices" | "settings";
+  active:
+    | "calendar"
+    | "todos"
+    | "projects"
+    | "export"
+    | "apprentices"
+    | "settings";
   role?: "apprentice" | "host";
   userName?: string;
   children: React.ReactNode;
@@ -35,15 +41,28 @@ export function AppShell({
             {isHost ? "My journal" : "Calendar"}
           </Link>
           {!isHost && (
-            <Link
-              href="/projects"
-              className={
-                active === "projects" ? styles.railLinkActive : styles.railLink
-              }
-            >
-              <md-icon>folder</md-icon>
-              Projects
-            </Link>
+            <>
+              <Link
+                href="/todos"
+                className={
+                  active === "todos" ? styles.railLinkActive : styles.railLink
+                }
+              >
+                <md-icon>checklist</md-icon>
+                To-dos
+              </Link>
+              <Link
+                href="/projects"
+                className={
+                  active === "projects"
+                    ? styles.railLinkActive
+                    : styles.railLink
+                }
+              >
+                <md-icon>folder</md-icon>
+                Projects
+              </Link>
+            </>
           )}
           {isHost && (
             <Link

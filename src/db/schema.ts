@@ -171,6 +171,26 @@ export const calendarBlock = pgTable("calendar_block", {
 });
 
 // ---------------------------------------------------------------------------
+// To-dos: personal tasks with an optional deadline, description and a link to
+// a project. Separate from calendar entries.
+// ---------------------------------------------------------------------------
+
+export const todo = pgTable("todo", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  deadline: timestamp("deadline", { withTimezone: true }),
+  projectId: uuid("project_id").references(() => project.id, {
+    onDelete: "set null",
+  }),
+  done: boolean("done").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
 // Bug reports: submitted through the public /report-bug page. No login is
 // required so a bug that blocks sign-in can still be reported.
 // ---------------------------------------------------------------------------
@@ -191,5 +211,6 @@ export const bugReport = pgTable("bug_report", {
 export type User = typeof user.$inferSelect;
 export type HostAssignment = typeof hostAssignment.$inferSelect;
 export type Project = typeof project.$inferSelect;
+export type Todo = typeof todo.$inferSelect;
 export type CalendarBlock = typeof calendarBlock.$inferSelect;
 export type NewCalendarBlock = typeof calendarBlock.$inferInsert;
