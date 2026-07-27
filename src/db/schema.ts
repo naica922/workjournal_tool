@@ -119,6 +119,9 @@ export const project = pgTable("project", {
   // Optional project link (e.g. go/ or a doc) and point of contact.
   link: text("link"),
   poc: text("poc"),
+  // Set when the project is marked completed; completed projects are no
+  // longer selectable for new entries but stay visible in their own list.
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

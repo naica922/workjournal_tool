@@ -158,6 +158,27 @@
   white-space: nowrap;
 }
 
+.completedChip {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  border-radius: 1rem;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.sectionHeading {
+  margin: 1rem 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .sectionTitle {
   margin: 1rem 0 0.25rem;
   color: var(--md-sys-color-on-surface-variant);
