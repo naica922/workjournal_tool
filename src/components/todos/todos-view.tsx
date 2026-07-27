@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { MdDialog } from "@material/web/dialog/dialog";
 import {
   createTodo,
   deleteTodo,
   listTodos,
   setTodoDone,
+  updateTodo,
 } from "@/server/todos";
 import { listProjects } from "@/server/projects";
-import type { Todo } from "@/db/schema";
+import type { Project, Todo } from "@/db/schema";
 import styles from "./todos-view.module.css";
 
 const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
@@ -20,9 +22,15 @@ const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
+function toLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function TodosView() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Todo | null>(null);
 
   const { data: todos } = useQuery({
     queryKey: ["todos"],
@@ -52,6 +60,15 @@ export function TodosView() {
   const deleteMutation = useMutation({
     mutationFn: deleteTodo,
     onSuccess: invalidate,
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: unknown }) =>
+      updateTodo(id, input),
+    onSuccess: () => {
+      invalidate();
+      setEditing(null);
+    },
+    onError: (e: Error) => setError(e.message),
   });
 
   const projectName = (id: string | null) =>
@@ -130,6 +147,16 @@ export function TodosView() {
         </div>
         <md-icon-button
           type="button"
+          aria-label="Edit to-do"
+          onClick={() => {
+            setError(null);
+            setEditing(t);
+          }}
+        >
+          <md-icon>edit</md-icon>
+        </md-icon-button>
+        <md-icon-button
+          type="button"
           aria-label="Delete to-do"
           onClick={() => deleteMutation.mutate(t.id)}
         >
@@ -205,6 +232,127 @@ export function TodosView() {
           )}
         </div>
       </div>
+
+      {editing && (
+        <EditTodoDialog
+          key={editing.id}
+          todo={editing}
+          projects={projects ?? []}
+          pending={updateMutation.isPending}
+          error={error}
+          onClose={() => setEditing(null)}
+          onSave={(input) => updateMutation.mutate({ id: editing.id, input })}
+        />
+      )}
     </div>
+  );
+}
+
+function EditTodoDialog({
+  todo,
+  projects,
+  pending,
+  error,
+  onClose,
+  onSave,
+}: {
+  todo: Todo;
+  projects: Project[];
+  pending: boolean;
+  error: string | null;
+  onClose: () => void;
+  onSave: (input: {
+    title: string;
+    description?: string;
+    deadline: string | null;
+    projectId: string | null;
+  }) => void;
+}) {
+  const dialogRef = useRef<MdDialog | null>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.show();
+    const handleClosed = () => onClose();
+    dialog.addEventListener("closed", handleClosed);
+    return () => dialog.removeEventListener("closed", handleClosed);
+  }, [onClose]);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const deadlineRaw = String(data.get("deadline") ?? "");
+    onSave({
+      title: String(data.get("title") ?? ""),
+      description: String(data.get("description") ?? "") || undefined,
+      deadline: deadlineRaw ? new Date(deadlineRaw).toISOString() : null,
+      projectId: String(data.get("projectId") ?? "") || null,
+    });
+  }
+
+  return (
+    <md-dialog ref={dialogRef}>
+      <div slot="headline">Edit to-do</div>
+      <form
+        id="edit-todo-form"
+        slot="content"
+        className={styles.form}
+        onSubmit={handleSubmit}
+      >
+        <md-outlined-text-field
+          label="Title"
+          name="title"
+          required
+          value={todo.title}
+        />
+        <md-outlined-text-field
+          label="Description"
+          name="description"
+          type="textarea"
+          rows={2}
+          value={todo.description ?? ""}
+        />
+        <label className={`${styles.dateField} body-small`}>
+          Deadline (optional)
+          <input
+            type="datetime-local"
+            name="deadline"
+            defaultValue={todo.deadline ? toLocalInput(new Date(todo.deadline)) : ""}
+          />
+        </label>
+        <md-outlined-select
+          label="Project (optional)"
+          name="projectId"
+          value={todo.projectId ?? ""}
+        >
+          <md-select-option value="">
+            <div slot="headline">No project</div>
+          </md-select-option>
+          {projects.map((p) => (
+            <md-select-option key={p.id} value={p.id}>
+              <div slot="headline">{p.name}</div>
+            </md-select-option>
+          ))}
+        </md-outlined-select>
+        {error && <p className={`${styles.error} body-medium`}>{error}</p>}
+      </form>
+      <div slot="actions">
+        <md-text-button type="button" onClick={() => dialogRef.current?.close()}>
+          Cancel
+        </md-text-button>
+        <md-filled-button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            (
+              document.getElementById("edit-todo-form") as HTMLFormElement | null
+            )?.requestSubmit()
+          }
+        >
+          {pending ? "Saving..." : "Save"}
+        </md-filled-button>
+      </div>
+    </md-dialog>
   );
 }
