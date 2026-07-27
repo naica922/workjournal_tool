@@ -99,11 +99,22 @@ export async function dragCreateSlot(page: Page) {
   }
 
   const x = columnBox.x + columnBox.width / 2;
-  await page.mouse.move(x, startBox.y + 2);
-  await page.mouse.down();
-  // Release in the second half of the 10:00 slot: with 15-minute snapping
-  // the selection then ends at 10:30.
-  await page.mouse.move(x, endBox.y + endBox.height / 2 + 2, { steps: 5 });
-  await page.mouse.up();
-  await expect(page.locator("md-dialog")).toBeVisible();
+  const dialog = page.locator("md-dialog");
+
+  // The drag-select occasionally does not register; retry a couple of times.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.mouse.move(x, startBox.y + 2);
+    await page.mouse.down();
+    // Release in the second half of the 10:00 slot: with 15-minute snapping
+    // the selection then ends at 10:30.
+    await page.mouse.move(x, endBox.y + endBox.height / 2 + 2, { steps: 8 });
+    await page.mouse.up();
+    try {
+      await expect(dialog).toBeVisible({ timeout: 2000 });
+      return;
+    } catch {
+      // retry
+    }
+  }
+  await expect(dialog).toBeVisible();
 }

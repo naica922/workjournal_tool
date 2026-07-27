@@ -57,14 +57,12 @@ function blockValues(data: BlockInput) {
     blockerEntries: data.blockerEntries.filter(
       (entry) => entry.blocker || entry.solutionSteps,
     ),
-    location: data.location ?? null,
+    location: data.location,
     color: data.color ?? null,
     recurrence: data.recurrence,
     recurrenceInterval: isCustom ? (data.recurrenceInterval ?? 1) : null,
     recurrenceUnit: isCustom ? (data.recurrenceUnit ?? "day") : null,
-    goLink: data.goLink || null,
-    critiqueLink: data.critiqueLink || null,
-    buganizerLink: data.buganizerLink || null,
+    links: data.links.filter((link) => link.url.trim()),
   };
 }
 

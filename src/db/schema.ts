@@ -130,6 +130,10 @@ export const project = pgTable("project", {
 // ---------------------------------------------------------------------------
 
 export type BlockerEntry = { blocker: string; solutionSteps: string };
+export type EventLink = {
+  type: "go" | "critique" | "buganizer" | "other";
+  url: string;
+};
 
 export const calendarBlock = pgTable("calendar_block", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -158,9 +162,7 @@ export const calendarBlock = pgTable("calendar_block", {
   // For "custom": repeat every N units.
   recurrenceInterval: integer("recurrence_interval"),
   recurrenceUnit: text("recurrence_unit", { enum: ["day", "week"] }),
-  goLink: text("go_link"),
-  critiqueLink: text("critique_link"),
-  buganizerLink: text("buganizer_link"),
+  links: jsonb("links").$type<EventLink[]>().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

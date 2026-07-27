@@ -1,5 +1,6 @@
 import type { CalendarBlock, Project } from "@/db/schema";
 import { expandOccurrences } from "@/lib/recurrence";
+import { linkLabel } from "@/lib/blocks";
 
 export type ProjectOverview = {
   project: Project;
@@ -55,15 +56,13 @@ export function buildProjectOverview(
     );
 
     const links = projectBlocks.flatMap((block) =>
-      (
-        [
-          ["Go link", block.goLink],
-          ["Critique", block.critiqueLink],
-          ["Buganizer", block.buganizerLink],
-        ] as const
-      )
-        .filter(([, url]) => !!url)
-        .map(([label, url]) => ({ eventTitle: block.title, label, url: url! })),
+      (block.links ?? [])
+        .filter((link) => link.url)
+        .map((link) => ({
+          eventTitle: block.title,
+          label: linkLabel(link.type),
+          url: link.url,
+        })),
     );
 
     return {

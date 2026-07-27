@@ -133,6 +133,22 @@
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.linkRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.linkType {
+  width: 8rem;
+  flex-shrink: 0;
+}
+
+.linkUrl {
+  flex: 1;
+  min-width: 0;
+}
+
 .actions {
   display: flex;
   gap: 0.5rem;

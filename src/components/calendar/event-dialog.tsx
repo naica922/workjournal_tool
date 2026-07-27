@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import type { MdDialog } from "@material/web/dialog/dialog";
 import {
   BLOCK_COLORS,
-  BUGANIZER_PREFIX,
-  CRITIQUE_PREFIX,
   DEFAULT_BLOCK_COLOR,
+  LINK_TYPES,
   type BlockInput,
 } from "@/lib/blocks";
-import type { BlockerEntry, Project } from "@/db/schema";
+import type { BlockerEntry, EventLink, Project } from "@/db/schema";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import styles from "./event-dialog.module.css";
 
@@ -27,10 +26,6 @@ function toTimeInput(d: Date) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function stripBarePrefix(value: string, prefix: string): string | undefined {
-  const trimmed = value.trim();
-  return trimmed === "" || trimmed === prefix ? undefined : trimmed;
-}
 
 // Collapsible section like "Blockers & solutions" or "Links & more".
 function Expandable({
@@ -95,14 +90,10 @@ export function EventDialog({
   const [recurrence, setRecurrence] = useState<BlockInput["recurrence"]>(
     block?.recurrence ?? "none",
   );
+  const [links, setLinks] = useState<EventLink[]>(block?.links ?? []);
 
   const start = state.mode === "edit" ? state.occurrence.start : state.start;
   const end = state.mode === "edit" ? state.occurrence.end : state.end;
-  const linkCount = [
-    block?.goLink,
-    block?.critiqueLink,
-    block?.buganizerLink,
-  ].filter(Boolean).length;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -166,8 +157,7 @@ export function EventDialog({
       blockerEntries: blockerEntries.filter(
         (entry) => entry.blocker.trim() || entry.solutionSteps.trim(),
       ),
-      location:
-        (String(data.get("location")) as "home" | "office") || undefined,
+      location: String(data.get("location")) as "home" | "office",
       color,
       recurrence,
       recurrenceInterval:
@@ -178,16 +168,7 @@ export function EventDialog({
         recurrence === "custom"
           ? (String(data.get("recurrenceUnit")) as "day" | "week")
           : null,
-      goLink: String(data.get("goLink") ?? "") || undefined,
-      // A field left at just its prefix counts as empty.
-      critiqueLink: stripBarePrefix(
-        String(data.get("critiqueLink") ?? ""),
-        CRITIQUE_PREFIX,
-      ),
-      buganizerLink: stripBarePrefix(
-        String(data.get("buganizerLink") ?? ""),
-        BUGANIZER_PREFIX,
-      ),
+      links: links.filter((link) => link.url.trim()),
     };
 
     onSave(input, block?.id);
@@ -323,17 +304,15 @@ export function EventDialog({
           <md-outlined-select
             label="Work location"
             name="location"
+            required
             disabled={readOnly}
-            value={block?.location ?? ""}
+            value={block?.location ?? "office"}
           >
-            <md-select-option value="">
-              <div slot="headline">Not specified</div>
-            </md-select-option>
             <md-select-option value="office">
               <div slot="headline">Office</div>
             </md-select-option>
             <md-select-option value="home">
-              <div slot="headline">Home</div>
+              <div slot="headline">Home office</div>
             </md-select-option>
           </md-outlined-select>
 
@@ -487,25 +466,80 @@ export function EventDialog({
           )}
         </Expandable>
 
-        <Expandable label="Links & more" badge={linkCount}>
-          <md-outlined-text-field
-            label="Go link"
-            name="goLink"
-            disabled={readOnly}
-            value={block?.goLink ?? ""}
-          />
-          <md-outlined-text-field
-            label="Critique"
-            name="critiqueLink"
-            disabled={readOnly}
-            value={block?.critiqueLink ?? (readOnly ? "" : CRITIQUE_PREFIX)}
-          />
-          <md-outlined-text-field
-            label="Buganizer"
-            name="buganizerLink"
-            disabled={readOnly}
-            value={block?.buganizerLink ?? (readOnly ? "" : BUGANIZER_PREFIX)}
-          />
+        <Expandable label="Links & more" badge={links.length}>
+          {links.map((link, index) => (
+            <div key={index} className={styles.linkRow}>
+              <md-outlined-select
+                class={styles.linkType}
+                label="Type"
+                disabled={readOnly}
+                value={link.type}
+                onInput={(e: React.FormEvent) =>
+                  setLinks((current) =>
+                    current.map((l, i) =>
+                      i === index
+                        ? {
+                            ...l,
+                            type: (e.target as HTMLSelectElement)
+                              .value as EventLink["type"],
+                          }
+                        : l,
+                    ),
+                  )
+                }
+              >
+                {LINK_TYPES.map((t) => (
+                  <md-select-option key={t.value} value={t.value}>
+                    <div slot="headline">{t.label}</div>
+                  </md-select-option>
+                ))}
+              </md-outlined-select>
+              <md-outlined-text-field
+                class={styles.linkUrl}
+                label="Link"
+                data-testid={`link-${index}`}
+                disabled={readOnly}
+                placeholder={
+                  LINK_TYPES.find((t) => t.value === link.type)?.placeholder
+                }
+                value={link.url}
+                onInput={(e: React.FormEvent) =>
+                  setLinks((current) =>
+                    current.map((l, i) =>
+                      i === index
+                        ? { ...l, url: (e.target as HTMLInputElement).value }
+                        : l,
+                    ),
+                  )
+                }
+              />
+              {!readOnly && (
+                <md-icon-button
+                  type="button"
+                  title={`Remove link ${index + 1}`}
+                  onClick={() =>
+                    setLinks((current) => current.filter((_, i) => i !== index))
+                  }
+                >
+                  <md-icon>delete</md-icon>
+                </md-icon-button>
+              )}
+            </div>
+          ))}
+          {!readOnly && (
+            <md-text-button
+              type="button"
+              onClick={() =>
+                setLinks((current) => [...current, { type: "go", url: "" }])
+              }
+            >
+              <md-icon slot="icon">add</md-icon>
+              Add link
+            </md-text-button>
+          )}
+          {readOnly && links.length === 0 && (
+            <p className={`${styles.groupLabel} body-small`}>No links.</p>
+          )}
         </Expandable>
 
         {error && <p className={`${styles.error} body-medium`}>{error}</p>}

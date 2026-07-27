@@ -234,11 +234,9 @@ export function CalendarView({
             projectName: project?.name ?? null,
             projectIcon: project?.icon ?? null,
             projectColor: project?.color ?? null,
-            links: [
-              occurrence.goLink,
-              occurrence.critiqueLink,
-              occurrence.buganizerLink,
-            ].filter(Boolean) as string[],
+            links: (occurrence.links ?? [])
+              .map((link) => link.url)
+              .filter(Boolean),
           },
         };
       }),
