@@ -95,18 +95,28 @@ export async function completeProfile(input: unknown) {
   return updated;
 }
 
-// A user may change their own role, e.g. a former apprentice who now
-// supervises apprentices. Their journal history stays on the account either
-// way; access to other calendars is still governed solely by accepted
-// assignments.
-export async function updateRole(role: "apprentice" | "host") {
+// A host may promote one of their apprentices to a host (rare, e.g. a former
+// apprentice who now supervises others). Only a host with an accepted
+// assignment for that apprentice may do this; the apprentice's journal
+// history stays on their account.
+export async function promoteApprenticeToHost(apprenticeId: string) {
   const session = await requireSession();
-  const parsed = z.enum(["apprentice", "host"]).parse(role);
+
+  const assignment = await db.query.hostAssignment.findFirst({
+    where: and(
+      eq(hostAssignment.apprenticeId, apprenticeId),
+      eq(hostAssignment.hostId, session.user.id),
+      eq(hostAssignment.status, "accepted"),
+    ),
+  });
+  if (!assignment) {
+    throw new Error("Not authorized to promote this apprentice");
+  }
 
   const [updated] = await db
     .update(user)
-    .set({ role: parsed, updatedAt: new Date() })
-    .where(eq(user.id, session.user.id))
+    .set({ role: "host", updatedAt: new Date() })
+    .where(eq(user.id, apprenticeId))
     .returning({ id: user.id, role: user.role });
 
   return updated;

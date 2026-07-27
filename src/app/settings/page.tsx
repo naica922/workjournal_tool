@@ -4,7 +4,6 @@ import { AppShell } from "@/components/app-shell";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { ProfileHeader } from "@/components/settings/profile-header";
 import { HostsSection } from "@/components/settings/hosts-section";
-import { RoleCard } from "@/components/settings/role-card";
 import styles from "./settings.module.css";
 
 export const metadata = { title: "Settings - Arbeitsjournal Tool" };
@@ -25,7 +24,6 @@ export default async function SettingsPage() {
         />
         <ProfileForm profile={profile} />
         {role === "apprentice" && <HostsSection />}
-        <RoleCard role={role} />
       </div>
     </AppShell>
   );
