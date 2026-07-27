@@ -45,6 +45,8 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="login-title">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="" width={56} height={56} className={styles.logo} />
         <h1 id="login-title" className={`${styles.title} headline-small`}>
           Arbeitsjournal Tool
         </h1>

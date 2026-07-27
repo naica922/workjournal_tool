@@ -65,6 +65,8 @@ export function TopBar({
         >
           <md-icon>menu</md-icon>
         </md-icon-button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="" width={28} height={28} className={styles.brandLogo} />
         <span className={styles.brand}>Workjournal</span>
         <Link
           href="/settings"

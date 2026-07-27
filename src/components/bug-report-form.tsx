@@ -15,7 +15,15 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function BugReportForm() {
+export function BugReportForm({
+  identity,
+}: {
+  identity?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+}) {
   const [formFactor, setFormFactor] = useState<"mobile" | "laptop">("laptop");
   const [error, setError] = useState<string | null>(null);
 
@@ -40,9 +48,10 @@ export function BugReportForm() {
     }
 
     mutation.mutate({
-      firstName: String(data.get("firstName") ?? ""),
-      lastName: String(data.get("lastName") ?? ""),
-      email: String(data.get("email") ?? ""),
+      // Signed-in users report under their profile identity.
+      firstName: identity?.firstName || String(data.get("firstName") ?? ""),
+      lastName: identity?.lastName || String(data.get("lastName") ?? ""),
+      email: identity?.email || String(data.get("email") ?? ""),
       description: String(data.get("description") ?? ""),
       deviceType: String(data.get("deviceType") ?? "") || undefined,
       formFactor,
@@ -84,27 +93,36 @@ export function BugReportForm() {
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.nameRow}>
-            <md-outlined-text-field
-              class={styles.field}
-              label="First name"
-              name="firstName"
-              required
-            />
-            <md-outlined-text-field
-              class={styles.field}
-              label="Last name"
-              name="lastName"
-              required
-            />
-          </div>
-          <md-outlined-text-field
-            class={styles.field}
-            label="Email"
-            name="email"
-            type="email"
-            required
-          />
+          {identity ? (
+            <p className={`${styles.subtitle} body-medium`}>
+              Reporting as {identity.firstName} {identity.lastName} (
+              {identity.email})
+            </p>
+          ) : (
+            <>
+              <div className={styles.nameRow}>
+                <md-outlined-text-field
+                  class={styles.field}
+                  label="First name"
+                  name="firstName"
+                  required
+                />
+                <md-outlined-text-field
+                  class={styles.field}
+                  label="Last name"
+                  name="lastName"
+                  required
+                />
+              </div>
+              <md-outlined-text-field
+                class={styles.field}
+                label="Email"
+                name="email"
+                type="email"
+                required
+              />
+            </>
+          )}
           <md-outlined-text-field
             class={styles.field}
             label="What happened?"
