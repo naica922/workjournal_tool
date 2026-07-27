@@ -155,6 +155,24 @@ export const calendarBlock = pgTable("calendar_block", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// ---------------------------------------------------------------------------
+// Bug reports: submitted through the public /report-bug page. No login is
+// required so a bug that blocks sign-in can still be reported.
+// ---------------------------------------------------------------------------
+
+export const bugReport = pgTable("bug_report", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  description: text("description").notNull(),
+  deviceType: text("device_type"),
+  formFactor: text("form_factor", { enum: ["mobile", "laptop"] }),
+  page: text("page"),
+  screenshot: text("screenshot"), // optional base64 data URL
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type HostAssignment = typeof hostAssignment.$inferSelect;
 export type Project = typeof project.$inferSelect;

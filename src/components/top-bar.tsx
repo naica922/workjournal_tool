@@ -98,6 +98,14 @@ export function TopBar({
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/report-bug"
+              className={styles.drawerLink}
+              onClick={() => setDrawerOpen(false)}
+            >
+              <md-icon>bug_report</md-icon>
+              Report a bug
+            </Link>
             <button
               type="button"
               className={styles.drawerLink}

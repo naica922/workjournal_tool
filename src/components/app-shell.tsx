@@ -68,6 +68,10 @@ export function AppShell({
             Settings
           </Link>
           <div className={styles.railSpacer} />
+          <Link href="/report-bug" className={styles.railLinkMuted}>
+            <md-icon>bug_report</md-icon>
+            Report a bug
+          </Link>
           <SignOutButton iconOnly />
         </nav>
         <div className={styles.content}>{children}</div>
