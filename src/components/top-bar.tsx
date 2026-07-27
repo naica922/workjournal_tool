@@ -15,7 +15,7 @@ export function TopBar({
 }: {
   userName: string;
   role: "apprentice" | "host";
-  active: "calendar" | "projects" | "apprentices" | "settings";
+  active: "calendar" | "projects" | "export" | "apprentices" | "settings";
 }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -51,6 +51,7 @@ export function TopBar({
             label: "Projects",
           },
         ]),
+    { href: "/export", key: "export", icon: "picture_as_pdf", label: "Export" },
     { href: "/settings", key: "settings", icon: "settings", label: "Settings" },
   ];
 

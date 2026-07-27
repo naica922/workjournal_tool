@@ -12,7 +12,7 @@ export function AppShell({
   userName = "",
   children,
 }: {
-  active: "calendar" | "projects" | "apprentices" | "settings";
+  active: "calendar" | "projects" | "export" | "apprentices" | "settings";
   role?: "apprentice" | "host";
   userName?: string;
   children: React.ReactNode;
@@ -58,6 +58,15 @@ export function AppShell({
               My apprentices
             </Link>
           )}
+          <Link
+            href="/export"
+            className={
+              active === "export" ? styles.railLinkActive : styles.railLink
+            }
+          >
+            <md-icon>picture_as_pdf</md-icon>
+            Export
+          </Link>
           <Link
             href="/settings"
             className={
