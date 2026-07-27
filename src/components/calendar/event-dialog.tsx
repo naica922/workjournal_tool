@@ -76,8 +76,10 @@ export function EventDialog({
 
     const input: BlockInput = {
       title: String(data.get("title") ?? ""),
-      start: `${date}T${startTime}:00`,
-      end: `${date}T${endTime}:00`,
+      // Interpret the entered wall-clock time in the browser's timezone and
+      // send an absolute timestamp - the server may run in UTC.
+      start: new Date(`${date}T${startTime}:00`).toISOString(),
+      end: new Date(`${date}T${endTime}:00`).toISOString(),
       description: String(data.get("description") ?? "") || undefined,
       blockers: String(data.get("blockers") ?? "") || undefined,
       solutionSteps: String(data.get("solutionSteps") ?? "") || undefined,

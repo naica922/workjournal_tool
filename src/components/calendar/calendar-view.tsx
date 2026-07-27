@@ -371,7 +371,7 @@ export function CalendarView({
             minute: "2-digit",
             hour12: false,
           }}
-          height="auto"
+          height="100%"
         />
       </div>
       {isMobile && !readOnly && (
