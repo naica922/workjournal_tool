@@ -48,7 +48,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.svg" alt="" width={56} height={56} className={styles.logo} />
         <h1 id="login-title" className={`${styles.title} headline-small`}>
-          Arbeitsjournal Tool
+          Workjournal Tool
         </h1>
         <p className={`${styles.subtitle} body-medium`}>
           Sign in to your account

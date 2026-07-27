@@ -6,7 +6,7 @@ import { ProfileHeader } from "@/components/settings/profile-header";
 import { HostsSection } from "@/components/settings/hosts-section";
 import styles from "./settings.module.css";
 
-export const metadata = { title: "Settings - Arbeitsjournal Tool" };
+export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const session = await requireProfile();

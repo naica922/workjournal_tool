@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { VerifyEmailForm } from "@/components/auth/verify-email-form";
 
-export const metadata = { title: "Verify email - Arbeitsjournal Tool" };
+export const metadata = { title: "Verify email" };
 
 export default async function VerifyEmailPage(
   props: PageProps<"/verify-email">,

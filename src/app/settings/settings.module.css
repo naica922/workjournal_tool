@@ -49,6 +49,37 @@
   margin: 0;
 }
 
+.identityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 0;
+}
+
+.identityItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.identityLabel {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.identityValue {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .identityGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .profileMeta {
   margin: 0;
   color: var(--md-sys-color-on-surface-variant);

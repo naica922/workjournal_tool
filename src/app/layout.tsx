@@ -10,7 +10,10 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Arbeitsjournal Tool",
+  title: {
+    default: "Workjournal Tool",
+    template: "%s · Workjournal Tool",
+  },
   description:
     "Work journal for apprentices: document your work in a weekly calendar and share it with your host.",
 };

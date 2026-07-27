@@ -19,13 +19,13 @@ export async function sendVerificationCodeEmail({
   otp: string;
 }) {
   await transporter.sendMail({
-    from: process.env.MAIL_FROM ?? "Arbeitsjournal Tool <noreply@localhost>",
+    from: process.env.MAIL_FROM ?? "Workjournal Tool <noreply@localhost>",
     to,
     subject: `${otp} is your verification code`,
     text: [
       `Hi,`,
       ``,
-      `Your Arbeitsjournal Tool verification code is:`,
+      `Your Workjournal Tool verification code is:`,
       ``,
       `${otp}`,
       ``,
@@ -47,13 +47,13 @@ export async function sendHostInviteEmail({
   const appUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
   await transporter.sendMail({
-    from: process.env.MAIL_FROM ?? "Arbeitsjournal Tool <noreply@localhost>",
+    from: process.env.MAIL_FROM ?? "Workjournal Tool <noreply@localhost>",
     to,
     subject: `${apprenticeName} added you as their host`,
     text: [
       `Hi,`,
       ``,
-      `${apprenticeName} (${apprenticeEmail}) added you as their host in the Arbeitsjournal Tool.`,
+      `${apprenticeName} (${apprenticeEmail}) added you as their host in the Workjournal Tool.`,
       `After you accept the invitation you can see their work journal calendar.`,
       ``,
       `Open your settings to accept the invitation:`,
