@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { calendarBlock, project } from "@/db/schema";
@@ -20,15 +20,30 @@ const projectSchema = z.object({
   poc: z.string().trim().max(200).optional(),
 });
 
+// Active projects only - used for the event dropdown, so completed projects
+// can no longer be assigned.
 export async function listProjects(apprenticeId?: string) {
   const session = await requireSession();
   const ownerId = apprenticeId ?? session.user.id;
   await assertCanViewCalendar(session.user.id, ownerId);
 
   return db.query.project.findMany({
-    where: eq(project.userId, ownerId),
+    where: and(eq(project.userId, ownerId), isNull(project.completedAt)),
     orderBy: (p, { asc }) => [asc(p.createdAt)],
   });
+}
+
+export async function setProjectCompleted(id: string, completed: boolean) {
+  const session = await requireSession();
+  const [updated] = await db
+    .update(project)
+    .set({ completedAt: completed ? new Date() : null })
+    .where(and(eq(project.id, id), eq(project.userId, session.user.id)))
+    .returning({ id: project.id });
+  if (!updated) {
+    throw new Error("Project not found");
+  }
+  return updated;
 }
 
 export async function createProject(input: unknown) {

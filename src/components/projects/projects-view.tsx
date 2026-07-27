@@ -6,6 +6,7 @@ import {
   createProject,
   deleteProject,
   projectOverview,
+  setProjectCompleted,
 } from "@/server/projects";
 import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, PROJECT_ICONS } from "@/lib/blocks";
 import { formatMinutes, type ProjectOverview } from "@/lib/project-stats";
@@ -21,13 +22,16 @@ function ProjectCard({
   overview,
   readOnly,
   onDelete,
+  onToggleCompleted,
 }: {
   overview: ProjectOverview;
   readOnly: boolean;
   onDelete: (id: string) => void;
+  onToggleCompleted: (id: string, completed: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const { project, totalMinutes, events, blockerEntries, links } = overview;
+  const isCompleted = !!project.completedAt;
 
   return (
     <section className={styles.card}>
@@ -53,6 +57,9 @@ function ProjectCard({
         <span className={`${styles.projectName} title-medium`}>
           {project.name}
         </span>
+        {isCompleted && (
+          <span className={styles.completedChip}>Completed</span>
+        )}
         <span className={`${styles.projectHours} body-medium`}>
           {formatMinutes(totalMinutes)}
         </span>
@@ -135,13 +142,17 @@ function ProjectCard({
           )}
 
           {!readOnly && (
-            <md-text-button
-              type="button"
-              onClick={() => onDelete(project.id)}
-              style={{ marginTop: "0.75rem" }}
-            >
-              Delete project
-            </md-text-button>
+            <div className={styles.cardActions}>
+              <md-outlined-button
+                type="button"
+                onClick={() => onToggleCompleted(project.id, !isCompleted)}
+              >
+                {isCompleted ? "Reopen project" : "Mark completed"}
+              </md-outlined-button>
+              <md-text-button type="button" onClick={() => onDelete(project.id)}>
+                Delete project
+              </md-text-button>
+            </div>
           )}
         </div>
       )}
@@ -184,6 +195,13 @@ export function ProjectsView({
 
   const deleteMutation = useMutation({
     mutationFn: deleteProject,
+    onSuccess: invalidate,
+    onError: (e: Error) => setError(e.message),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
+      setProjectCompleted(id, completed),
     onSuccess: invalidate,
     onError: (e: Error) => setError(e.message),
   });
@@ -297,21 +315,43 @@ export function ProjectsView({
         </section>
       )}
 
-      {(overviews ?? []).map((overview) => (
-        <ProjectCard
-          key={overview.project.id}
-          overview={overview}
-          readOnly={readOnly}
-          onDelete={(id) => deleteMutation.mutate(id)}
-        />
-      ))}
-      {overviews?.length === 0 && (
-        <p className={`${styles.empty} body-medium`}>
-          {readOnly
-            ? "No projects yet."
-            : "No projects yet. Create one and assign it to your calendar entries."}
-        </p>
-      )}
+      {(() => {
+        const active = (overviews ?? []).filter((o) => !o.project.completedAt);
+        const completed = (overviews ?? []).filter(
+          (o) => o.project.completedAt,
+        );
+        const renderCard = (overview: ProjectOverview) => (
+          <ProjectCard
+            key={overview.project.id}
+            overview={overview}
+            readOnly={readOnly}
+            onDelete={(id) => deleteMutation.mutate(id)}
+            onToggleCompleted={(id, completed) =>
+              completeMutation.mutate({ id, completed })
+            }
+          />
+        );
+        return (
+          <>
+            {active.map(renderCard)}
+            {overviews?.length === 0 && (
+              <p className={`${styles.empty} body-medium`}>
+                {readOnly
+                  ? "No projects yet."
+                  : "No projects yet. Create one and assign it to your calendar entries."}
+              </p>
+            )}
+            {completed.length > 0 && (
+              <>
+                <h2 className={`${styles.sectionHeading} title-medium`}>
+                  Completed projects
+                </h2>
+                {completed.map(renderCard)}
+              </>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

@@ -64,6 +64,13 @@
       "when": 1785153467704,
       "tag": "0008_event_links",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785154621029,
+      "tag": "0009_project_completed",
+      "breakpoints": true
     }
   ]
 }
