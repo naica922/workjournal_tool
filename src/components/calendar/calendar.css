@@ -157,9 +157,11 @@
 .wj-event {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   column-gap: 0.375rem;
   overflow: hidden;
   line-height: 1.25;
+  height: 100%;
 }
 
 .wj-event-title {
@@ -168,6 +170,45 @@
 
 .wj-event-meta {
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.wj-event-project-icon {
+  font-size: 0.875rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  vertical-align: middle;
+}
+
+/* Links fill the remaining height of the block; taller events show more,
+   shorter events clip them. */
+.wj-event-links {
+  flex-basis: 100%;
+  margin-top: 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.wj-event-link {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wj-event-link-icon {
+  font-size: 0.75rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
 }
 
 .fc .fc-timegrid-slot {

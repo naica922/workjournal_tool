@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { MdDialog } from "@material/web/dialog/dialog";
-import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, type BlockInput } from "@/lib/blocks";
+import {
+  BLOCK_COLORS,
+  BUGANIZER_PREFIX,
+  CRITIQUE_PREFIX,
+  DEFAULT_BLOCK_COLOR,
+  type BlockInput,
+} from "@/lib/blocks";
 import type { BlockerEntry, Project } from "@/db/schema";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import styles from "./event-dialog.module.css";
@@ -19,6 +25,11 @@ function toDateInput(d: Date) {
 function toTimeInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function stripBarePrefix(value: string, prefix: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed === "" || trimmed === prefix ? undefined : trimmed;
 }
 
 // Collapsible section like "Blockers & solutions" or "Links & more".
@@ -142,8 +153,15 @@ export function EventDialog({
       recurrence:
         (String(data.get("recurrence")) as BlockInput["recurrence"]) || "none",
       goLink: String(data.get("goLink") ?? "") || undefined,
-      critiqueLink: String(data.get("critiqueLink") ?? "") || undefined,
-      buganizerLink: String(data.get("buganizerLink") ?? "") || undefined,
+      // A field left at just its prefix counts as empty.
+      critiqueLink: stripBarePrefix(
+        String(data.get("critiqueLink") ?? ""),
+        CRITIQUE_PREFIX,
+      ),
+      buganizerLink: stripBarePrefix(
+        String(data.get("buganizerLink") ?? ""),
+        BUGANIZER_PREFIX,
+      ),
     };
 
     onSave(input, block?.id);
@@ -223,13 +241,17 @@ export function EventDialog({
             disabled={readOnly}
             value={block?.projectId ?? ""}
           >
-            <md-select-option value="" aria-label="No project" />
+            <md-select-option value="">
+              <div slot="headline">No project</div>
+            </md-select-option>
             {projects.map((p) => (
               <md-select-option key={p.id} value={p.id}>
-                <div slot="headline">
-                  {p.icon ? `${p.icon} ` : ""}
-                  {p.name}
-                </div>
+                <div slot="headline">{p.name}</div>
+                {p.icon && (
+                  <md-icon slot="start" style={{ color: p.color }}>
+                    {p.icon}
+                  </md-icon>
+                )}
               </md-select-option>
             ))}
           </md-outlined-select>
@@ -240,7 +262,9 @@ export function EventDialog({
             disabled={readOnly}
             value={block?.location ?? ""}
           >
-            <md-select-option value="" aria-label="No location" />
+            <md-select-option value="">
+              <div slot="headline">Not specified</div>
+            </md-select-option>
             <md-select-option value="office">
               <div slot="headline">Office</div>
             </md-select-option>
@@ -371,13 +395,13 @@ export function EventDialog({
             label="Critique"
             name="critiqueLink"
             disabled={readOnly}
-            value={block?.critiqueLink ?? ""}
+            value={block?.critiqueLink ?? (readOnly ? "" : CRITIQUE_PREFIX)}
           />
           <md-outlined-text-field
             label="Buganizer"
             name="buganizerLink"
             disabled={readOnly}
-            value={block?.buganizerLink ?? ""}
+            value={block?.buganizerLink ?? (readOnly ? "" : BUGANIZER_PREFIX)}
           />
         </Expandable>
 

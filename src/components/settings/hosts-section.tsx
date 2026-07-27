@@ -24,11 +24,15 @@ export function HostsSection() {
     onSuccess: (result) => {
       invalidate();
       setError(null);
-      setNotice(
-        result.emailSent
-          ? `Invitation email sent to ${result.hostEmail}.`
-          : "Invitation created, but the email could not be sent.",
-      );
+      if (result.emailSent) {
+        setNotice(`Invitation email sent to ${result.hostEmail}.`);
+      } else if (result.mailConfigured) {
+        setNotice("Invitation created, but the email could not be sent.");
+      } else {
+        setNotice(
+          `Invitation created. ${result.hostEmail} can accept it in their settings after signing in.`,
+        );
+      }
     },
     onError: (e: Error) => {
       setNotice(null);

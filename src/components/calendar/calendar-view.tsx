@@ -54,15 +54,42 @@ function renderEvent(arg: EventContentArg) {
   const location = event.extendedProps.location as
     | keyof typeof LOCATION_LABEL
     | null;
-  const projectLabel = event.extendedProps.projectLabel as string | null;
+  const projectName = event.extendedProps.projectName as string | null;
+  const projectIcon = event.extendedProps.projectIcon as string | null;
+  const projectColor = event.extendedProps.projectColor as string | null;
+  const links = (event.extendedProps.links as string[]) ?? [];
   return (
     <div className="wj-event">
       <span className="wj-event-title">{event.title}</span>{" "}
       <span className="wj-event-meta">
         {time}
         {location ? ` · ${LOCATION_LABEL[location]}` : ""}
-        {projectLabel ? ` · ${projectLabel}` : ""}
+        {projectName ? (
+          <>
+            {" · "}
+            {projectIcon && (
+              <md-icon
+                class="wj-event-project-icon"
+                style={projectColor ? { color: projectColor } : undefined}
+              >
+                {projectIcon}
+              </md-icon>
+            )}
+            {projectName}
+          </>
+        ) : null}
       </span>
+      {/* Links appear only when the block is tall enough (CSS clamps them) */}
+      {links.length > 0 && (
+        <span className="wj-event-links">
+          {links.map((link, index) => (
+            <span key={index} className="wj-event-link">
+              <md-icon class="wj-event-link-icon">link</md-icon>
+              {link}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   );
 }
@@ -199,9 +226,14 @@ export function CalendarView({
           textColor: "#1f1f1f",
           extendedProps: {
             location: occurrence.location,
-            projectLabel: project
-              ? `${project.icon ? `${project.icon} ` : ""}${project.name}`
-              : null,
+            projectName: project?.name ?? null,
+            projectIcon: project?.icon ?? null,
+            projectColor: project?.color ?? null,
+            links: [
+              occurrence.goLink,
+              occurrence.critiqueLink,
+              occurrence.buganizerLink,
+            ].filter(Boolean) as string[],
           },
         };
       }),
