@@ -12,14 +12,19 @@ export const BLOCK_COLORS = [
 
 export const DEFAULT_BLOCK_COLOR = BLOCK_COLORS[0].value;
 
+export const blockerEntrySchema = z.object({
+  blocker: z.string().trim().max(5000),
+  solutionSteps: z.string().trim().max(5000),
+});
+
 export const blockInputSchema = z
   .object({
     title: z.string().trim().min(1, "Title is required").max(200),
     start: z.iso.datetime({ offset: true, local: true }),
     end: z.iso.datetime({ offset: true, local: true }),
     description: z.string().max(5000).optional(),
-    blockers: z.string().max(5000).optional(),
-    solutionSteps: z.string().max(5000).optional(),
+    projectId: z.uuid().nullable().optional(),
+    blockerEntries: z.array(blockerEntrySchema).max(20).default([]),
     location: z.enum(["home", "office"]).optional(),
     color: z
       .enum(BLOCK_COLORS.map((c) => c.value) as [string, ...string[]])

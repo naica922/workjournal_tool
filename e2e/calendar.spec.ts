@@ -15,7 +15,15 @@ test("UC-05/UC-06: an apprentice creates a calendar block with details and sees 
   await dragCreateSlot(page);
 
   await textField(page, "title").fill("Write IPA documentation");
-  await textField(page, "blockers").fill("Waiting for review from my host");
+  // Blockers live in a collapsible section as blocker/solution pairs.
+  await page.getByRole("button", { name: /Blockers & solutions/ }).click();
+  await page.locator("md-text-button", { hasText: "Add blocker" }).click();
+  await page
+    .locator('[data-testid="blocker-0"] textarea')
+    .fill("Waiting for review from my host");
+  await page
+    .locator('[data-testid="solution-0"] textarea')
+    .fill("Asked in the team chat");
   // Pick the green color swatch.
   await page.getByRole("radio", { name: "Green" }).click();
   await page.locator("md-filled-button", { hasText: "Save" }).click();
@@ -101,4 +109,49 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
     page.locator("md-filled-button", { hasText: "Save" }),
   ).toHaveCount(0);
   await expect(page.locator("md-text-button", { hasText: "Close" })).toBeVisible();
+});
+
+test("projects: assigned events aggregate hours in the projects view", async ({
+  page,
+}) => {
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
+
+  // Create a project.
+  await page.getByRole("link", { name: "Projects" }).click();
+  await textField(page, "name").fill("Coop event");
+  await page.locator("md-filled-tonal-button", { hasText: "Create" }).click();
+  await expect(page.getByText("Coop event")).toBeVisible();
+
+  // Create an event assigned to the project. It is moved a week into the
+  // past so the time counts as invested regardless of the current time.
+  await page.getByRole("link", { name: "Calendar" }).click();
+  await dragCreateSlot(page);
+  await textField(page, "title").fill("Coop planning");
+  const lastWeek = new Date(Date.now() - 7 * 864e5);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  await page
+    .locator('input[name="date"]')
+    .fill(
+      `${lastWeek.getFullYear()}-${pad(lastWeek.getMonth() + 1)}-${pad(lastWeek.getDate())}`,
+    );
+  await page
+    .locator('md-outlined-select[name="projectId"]')
+    .evaluate((select: HTMLSelectElement, name) => {
+      const option = [...select.querySelectorAll("md-select-option")].find(
+        (o) => o.textContent?.includes(name),
+      ) as (Element & { value: string }) | undefined;
+      select.value = option!.value;
+    }, "Coop event");
+  await page.locator("md-filled-button", { hasText: "Save" }).click();
+  await expect(page.locator("md-dialog")).toHaveCount(0, { timeout: 15_000 });
+
+  // The projects view shows the invested time and the event.
+  await page.getByRole("link", { name: "Projects" }).click();
+  const card = page
+    .locator("section", { has: page.getByRole("button", { name: /Coop event/ }) })
+    .last();
+  await expect(card.getByText("1 h 30 min")).toBeVisible({ timeout: 15_000 });
+  await card.getByRole("button", { name: /Coop event/ }).click();
+  await expect(card.getByText("Coop planning")).toBeVisible();
 });

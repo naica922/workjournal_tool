@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { MdDialog } from "@material/web/dialog/dialog";
 import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, type BlockInput } from "@/lib/blocks";
+import type { BlockerEntry, Project } from "@/db/schema";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import styles from "./event-dialog.module.css";
 
@@ -20,12 +21,41 @@ function toTimeInput(d: Date) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Collapsible section like "Blockers & solutions" or "Links & more".
+function Expandable({
+  label,
+  badge,
+  children,
+}: {
+  label: string;
+  badge?: number;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={styles.expandable}>
+      <button
+        type="button"
+        className={styles.expandableToggle}
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <md-icon>{open ? "expand_less" : "expand_more"}</md-icon>
+        <span className="body-medium">{label}</span>
+        {!!badge && <span className={styles.expandableBadge}>{badge}</span>}
+      </button>
+      {open && <div className={styles.expandableContent}>{children}</div>}
+    </div>
+  );
+}
+
 export function EventDialog({
   state,
   readOnly,
   pending,
   error,
   quick = false,
+  projects = [],
   onClose,
   onSave,
   onDelete,
@@ -37,6 +67,7 @@ export function EventDialog({
   // Skip open/close animations (used on mobile, where the dialog is a
   // near-fullscreen sheet and must close reliably).
   quick?: boolean;
+  projects?: Project[];
   onClose: () => void;
   onSave: (input: BlockInput, blockId?: string) => void;
   onDelete: (blockId: string) => void;
@@ -46,9 +77,17 @@ export function EventDialog({
   const [color, setColor] = useState<string>(
     block?.color ?? DEFAULT_BLOCK_COLOR,
   );
+  const [blockerEntries, setBlockerEntries] = useState<BlockerEntry[]>(
+    block?.blockerEntries?.length ? block.blockerEntries : [],
+  );
 
   const start = state.mode === "edit" ? state.occurrence.start : state.start;
   const end = state.mode === "edit" ? state.occurrence.end : state.end;
+  const linkCount = [
+    block?.goLink,
+    block?.critiqueLink,
+    block?.buganizerLink,
+  ].filter(Boolean).length;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -64,6 +103,18 @@ export function EventDialog({
       document.body.style.overflow = previousOverflow;
     };
   }, [onClose]);
+
+  function updateEntry(
+    index: number,
+    field: keyof BlockerEntry,
+    value: string,
+  ) {
+    setBlockerEntries((entries) =>
+      entries.map((entry, i) =>
+        i === index ? { ...entry, [field]: value } : entry,
+      ),
+    );
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,8 +132,10 @@ export function EventDialog({
       start: new Date(`${date}T${startTime}:00`).toISOString(),
       end: new Date(`${date}T${endTime}:00`).toISOString(),
       description: String(data.get("description") ?? "") || undefined,
-      blockers: String(data.get("blockers") ?? "") || undefined,
-      solutionSteps: String(data.get("solutionSteps") ?? "") || undefined,
+      projectId: String(data.get("projectId") ?? "") || null,
+      blockerEntries: blockerEntries.filter(
+        (entry) => entry.blocker.trim() || entry.solutionSteps.trim(),
+      ),
       location:
         (String(data.get("location")) as "home" | "office") || undefined,
       color,
@@ -136,6 +189,7 @@ export function EventDialog({
               type="time"
               name="startTime"
               required
+              step={900}
               disabled={readOnly}
               defaultValue={toTimeInput(start)}
             />
@@ -146,6 +200,7 @@ export function EventDialog({
               type="time"
               name="endTime"
               required
+              step={900}
               disabled={readOnly}
               defaultValue={toTimeInput(end)}
             />
@@ -160,26 +215,25 @@ export function EventDialog({
           disabled={readOnly}
           value={block?.description ?? ""}
         />
-        <md-outlined-text-field
-          label="Blockers"
-          name="blockers"
-          type="textarea"
-          rows={2}
-          disabled={readOnly}
-          supporting-text="What blocked you, and who did you ask for help?"
-          value={block?.blockers ?? ""}
-        />
-        <md-outlined-text-field
-          label="Solution steps"
-          name="solutionSteps"
-          type="textarea"
-          rows={2}
-          disabled={readOnly}
-          supporting-text="Steps you took to solve the problem"
-          value={block?.solutionSteps ?? ""}
-        />
 
         <div className={styles.row}>
+          <md-outlined-select
+            label="Project"
+            name="projectId"
+            disabled={readOnly}
+            value={block?.projectId ?? ""}
+          >
+            <md-select-option value="" aria-label="No project" />
+            {projects.map((p) => (
+              <md-select-option key={p.id} value={p.id}>
+                <div slot="headline">
+                  {p.icon ? `${p.icon} ` : ""}
+                  {p.name}
+                </div>
+              </md-select-option>
+            ))}
+          </md-outlined-select>
+
           <md-outlined-select
             label="Work location"
             name="location"
@@ -235,7 +289,78 @@ export function EventDialog({
           </div>
         </div>
 
-        <div className={styles.row}>
+        <Expandable label="Blockers & solutions" badge={blockerEntries.length}>
+          {blockerEntries.map((entry, index) => (
+            <div key={index} className={styles.blockerPair}>
+              <div className={styles.blockerPairHeader}>
+                <span className="body-small">Blocker {index + 1}</span>
+                {!readOnly && (
+                  <md-icon-button
+                    type="button"
+                    title={`Remove blocker ${index + 1}`}
+                    onClick={() =>
+                      setBlockerEntries((entries) =>
+                        entries.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    <md-icon>delete</md-icon>
+                  </md-icon-button>
+                )}
+              </div>
+              <md-outlined-text-field
+                label="Blocker"
+                data-testid={`blocker-${index}`}
+                type="textarea"
+                rows={2}
+                disabled={readOnly}
+                supporting-text="What blocked you, and who did you ask for help?"
+                value={entry.blocker}
+                onInput={(e: React.FormEvent) =>
+                  updateEntry(
+                    index,
+                    "blocker",
+                    (e.target as HTMLInputElement).value,
+                  )
+                }
+              />
+              <md-outlined-text-field
+                label="Solution steps"
+                data-testid={`solution-${index}`}
+                type="textarea"
+                rows={2}
+                disabled={readOnly}
+                supporting-text="Steps you took to solve this blocker"
+                value={entry.solutionSteps}
+                onInput={(e: React.FormEvent) =>
+                  updateEntry(
+                    index,
+                    "solutionSteps",
+                    (e.target as HTMLInputElement).value,
+                  )
+                }
+              />
+            </div>
+          ))}
+          {!readOnly && (
+            <md-text-button
+              type="button"
+              onClick={() =>
+                setBlockerEntries((entries) => [
+                  ...entries,
+                  { blocker: "", solutionSteps: "" },
+                ])
+              }
+            >
+              Add blocker
+            </md-text-button>
+          )}
+          {readOnly && blockerEntries.length === 0 && (
+            <p className={`${styles.groupLabel} body-small`}>No blockers.</p>
+          )}
+        </Expandable>
+
+        <Expandable label="Links & more" badge={linkCount}>
           <md-outlined-text-field
             label="Go link"
             name="goLink"
@@ -254,7 +379,7 @@ export function EventDialog({
             disabled={readOnly}
             value={block?.buganizerLink ?? ""}
           />
-        </div>
+        </Expandable>
 
         {error && <p className={`${styles.error} body-medium`}>{error}</p>}
       </form>

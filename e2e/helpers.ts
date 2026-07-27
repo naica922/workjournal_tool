@@ -101,7 +101,9 @@ export async function dragCreateSlot(page: Page) {
   const x = columnBox.x + columnBox.width / 2;
   await page.mouse.move(x, startBox.y + 2);
   await page.mouse.down();
-  await page.mouse.move(x, endBox.y + 2, { steps: 5 });
+  // Release in the second half of the 10:00 slot: with 15-minute snapping
+  // the selection then ends at 10:30.
+  await page.mouse.move(x, endBox.y + endBox.height / 2 + 2, { steps: 5 });
   await page.mouse.up();
   await expect(page.locator("md-dialog")).toBeVisible();
 }
