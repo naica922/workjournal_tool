@@ -29,19 +29,37 @@ const bugReportSchema = z.object({
     .optional(),
 });
 
-export async function submitBugReport(input: unknown) {
-  const data = bugReportSchema.parse(input);
+export type BugReportResult = { ok: true } | { ok: false; error: string };
 
-  await db.insert(bugReport).values({
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
-    description: data.description,
-    deviceType: data.deviceType || null,
-    formFactor: data.formFactor ?? null,
-    page: data.page || null,
-    screenshot: data.screenshot || null,
-  });
+export async function submitBugReport(
+  input: unknown,
+): Promise<BugReportResult> {
+  // Return validation problems as a friendly message instead of throwing;
+  // thrown errors are sanitized to a cryptic digest in production.
+  const parsed = bugReportSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Please check your entries.",
+    };
+  }
+  const data = parsed.data;
+
+  try {
+    await db.insert(bugReport).values({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      description: data.description,
+      deviceType: data.deviceType || null,
+      formFactor: data.formFactor ?? null,
+      page: data.page || null,
+      screenshot: data.screenshot || null,
+    });
+  } catch (error) {
+    console.error("Failed to save bug report", error);
+    return { ok: false, error: "Could not submit the report. Please retry." };
+  }
 
   return { ok: true };
 }

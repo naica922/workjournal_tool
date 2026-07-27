@@ -29,8 +29,13 @@ export function BugReportForm({
 
   const mutation = useMutation({
     mutationFn: submitBugReport,
-    onError: (e: Error) => setError(e.message),
+    onSuccess: (result) => {
+      if (!result.ok) setError(result.error);
+    },
+    onError: () =>
+      setError("Something went wrong submitting the report. Please retry."),
   });
+  const submitted = mutation.isSuccess && mutation.data?.ok === true;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,7 +65,7 @@ export function BugReportForm({
     });
   }
 
-  if (mutation.isSuccess) {
+  if (submitted) {
     return (
       <main className={styles.page}>
         <section className={styles.card}>
