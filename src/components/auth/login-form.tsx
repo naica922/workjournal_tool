@@ -85,6 +85,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         <p className={`${styles.switchAuth} body-medium`}>
           Don&apos;t have an account? <Link href="/register">Sign up</Link>
         </p>
+        <p className={`${styles.switchAuth} body-small`}>
+          <Link href="/report-bug">Report a bug</Link>
+        </p>
       </section>
     </main>
   );

@@ -10,7 +10,12 @@ export function proxy(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/verify-email";
+  // The bug report page is reachable with or without a session.
+  const isPublicPage = pathname === "/report-bug";
 
+  if (isPublicPage) {
+    return NextResponse.next();
+  }
   if (!sessionCookie && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
