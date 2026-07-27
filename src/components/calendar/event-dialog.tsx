@@ -26,6 +26,27 @@ function toTimeInput(d: Date) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Times to pick from, in 15-minute steps, so the fields are not free text.
+const TIME_OPTIONS: string[] = Array.from({ length: 24 * 4 }, (_, i) => {
+  const h = Math.floor(i / 4);
+  const m = (i % 4) * 15;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+});
+
+// Nearest option to a "HH:MM" value (snaps stored times onto the 15-min grid).
+function snapTime(value: string): string {
+  const [h, m] = value.split(":").map(Number);
+  const snapped = Math.round(m / 15) * 15;
+  const hour = h + (snapped === 60 ? 1 : 0);
+  const min = snapped === 60 ? 0 : snapped;
+  return `${String(hour % 24).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function addHour(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 
 // Collapsible section like "Blockers & solutions" or "Links & more".
 function Expandable({
@@ -91,9 +112,26 @@ export function EventDialog({
     block?.recurrence ?? "none",
   );
   const [links, setLinks] = useState<EventLink[]>(block?.links ?? []);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const start = state.mode === "edit" ? state.occurrence.start : state.start;
   const end = state.mode === "edit" ? state.occurrence.end : state.end;
+
+  const [date, setDate] = useState(toDateInput(start));
+  const [endDate, setEndDate] = useState(toDateInput(end));
+  const [startTime, setStartTime] = useState(snapTime(toTimeInput(start)));
+  const [endTime, setEndTime] = useState(snapTime(toTimeInput(end)));
+
+  // Switching an all-day event to a timed one: if the derived times collapse
+  // to the same value (00:00-00:00), pick a sensible one-hour slot instead.
+  function handleAllDayChange(checked: boolean) {
+    setAllDay(checked);
+    if (!checked && startTime === endTime) {
+      const newStart = startTime === "00:00" ? "09:00" : startTime;
+      setStartTime(newStart);
+      setEndTime(addHour(newStart));
+    }
+  }
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -127,10 +165,8 @@ export function EventDialog({
     if (readOnly) return;
 
     const data = new FormData(event.currentTarget);
-    const date = String(data.get("date"));
-    const endDate = String(data.get("endDate") || date);
 
-    // All-day events span whole calendar days; timed events use the entered
+    // All-day events span whole calendar days; timed events use the picked
     // start/end times. Times are interpreted in the browser's timezone and
     // sent as absolute timestamps (the server may run in UTC).
     let startIso: string;
@@ -141,11 +177,14 @@ export function EventDialog({
       endExclusive.setDate(endExclusive.getDate() + 1);
       endIso = endExclusive.toISOString();
     } else {
-      const startTime = String(data.get("startTime"));
-      const endTime = String(data.get("endTime"));
+      if (endTime <= startTime) {
+        setLocalError("The end time must be after the start time.");
+        return;
+      }
       startIso = new Date(`${date}T${startTime}:00`).toISOString();
       endIso = new Date(`${date}T${endTime}:00`).toISOString();
     }
+    setLocalError(null);
 
     const input: BlockInput = {
       title: String(data.get("title") ?? ""),
@@ -188,6 +227,14 @@ export function EventDialog({
         slot="content"
         className={styles.form}
         onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          // Enter saves; but not inside a textarea (where it adds a newline).
+          const tag = (e.target as HTMLElement).tagName;
+          if (e.key === "Enter" && tag !== "TEXTAREA") {
+            e.preventDefault();
+            e.currentTarget.requestSubmit();
+          }
+        }}
       >
         <md-outlined-text-field
           label="Title"
@@ -202,7 +249,7 @@ export function EventDialog({
             checked={allDay}
             disabled={readOnly}
             onInput={(e: React.FormEvent) =>
-              setAllDay((e.target as HTMLInputElement).checked)
+              handleAllDayChange((e.target as HTMLInputElement).checked)
             }
           />
           <span className="body-medium">
@@ -211,61 +258,67 @@ export function EventDialog({
         </label>
 
         {allDay ? (
-          <div className={styles.row} key="allday-fields">
+          <div className={styles.row}>
             <label className={`${styles.timeField} body-small`}>
               From
               <input
                 type="date"
-                name="date"
-                required
+                value={date}
                 disabled={readOnly}
-                defaultValue={toDateInput(start)}
+                onChange={(e) => setDate(e.target.value)}
               />
             </label>
             <label className={`${styles.timeField} body-small`}>
               To
               <input
                 type="date"
-                name="endDate"
-                required
+                value={endDate}
                 disabled={readOnly}
-                defaultValue={toDateInput(end)}
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </label>
           </div>
         ) : (
-          <div className={styles.row} key="timed-fields">
+          <div className={styles.row}>
             <label className={`${styles.timeField} body-small`}>
               Date
               <input
                 type="date"
                 name="date"
-                required
+                value={date}
                 disabled={readOnly}
-                defaultValue={toDateInput(start)}
+                onChange={(e) => setDate(e.target.value)}
               />
             </label>
             <label className={`${styles.timeField} body-small`}>
               From
-              <input
-                type="time"
-                name="startTime"
-                required
-                step={900}
+              <select
+                className={styles.timeSelect}
+                value={startTime}
                 disabled={readOnly}
-                defaultValue={toTimeInput(start)}
-              />
+                onChange={(e) => setStartTime(e.target.value)}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className={`${styles.timeField} body-small`}>
               To
-              <input
-                type="time"
-                name="endTime"
-                required
-                step={900}
+              <select
+                className={styles.timeSelect}
+                value={endTime}
                 disabled={readOnly}
-                defaultValue={toTimeInput(end)}
-              />
+                onChange={(e) => setEndTime(e.target.value)}
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
         )}
@@ -542,7 +595,9 @@ export function EventDialog({
           )}
         </Expandable>
 
-        {error && <p className={`${styles.error} body-medium`}>{error}</p>}
+        {(localError || error) && (
+          <p className={`${styles.error} body-medium`}>{localError || error}</p>
+        )}
       </form>
       <div slot="actions" className={styles.actions}>
         {!readOnly && block && (
