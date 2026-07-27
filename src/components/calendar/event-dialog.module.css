@@ -70,6 +70,14 @@
   margin: 0;
 }
 
+.allDayToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--md-sys-color-on-surface);
+}
+
 .expandable {
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 0.75rem;
@@ -123,6 +131,22 @@
   align-items: center;
   justify-content: space-between;
   color: var(--md-sys-color-on-surface-variant);
+}
+
+.linkRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.linkType {
+  width: 8rem;
+  flex-shrink: 0;
+}
+
+.linkUrl {
+  flex: 1;
+  min-width: 0;
 }
 
 .actions {

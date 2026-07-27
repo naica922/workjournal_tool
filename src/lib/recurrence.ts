@@ -8,12 +8,32 @@ export type BlockOccurrence = Omit<CalendarBlock, "start" | "end"> & {
   occurrenceId: string;
 };
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+
+// Milliseconds between occurrences for a block's recurrence, or null for none.
+function recurrenceIntervalMs(block: CalendarBlock): number | null {
+  switch (block.recurrence) {
+    case "daily":
+      return DAY_MS;
+    case "weekly":
+      return WEEK_MS;
+    case "biweekly":
+      return 2 * WEEK_MS;
+    case "custom": {
+      const interval = block.recurrenceInterval ?? 1;
+      const unit = block.recurrenceUnit === "week" ? WEEK_MS : DAY_MS;
+      return Math.max(1, interval) * unit;
+    }
+    default:
+      return null;
+  }
+}
 
 /**
  * Expands calendar blocks into the concrete occurrences that fall inside
  * [rangeStart, rangeEnd). Non-recurring blocks yield at most one occurrence;
- * weekly/biweekly blocks yield one per interval from their start onwards
+ * recurring blocks yield one per interval from their start onwards
  * (recurrences never occur before the block's own start).
  */
 export function expandOccurrences(
@@ -28,14 +48,13 @@ export function expandOccurrences(
     const end = new Date(block.end);
     const duration = end.getTime() - start.getTime();
 
-    if (block.recurrence === "none") {
+    const intervalMs = recurrenceIntervalMs(block);
+    if (intervalMs === null) {
       if (start < rangeEnd && end > rangeStart) {
         result.push({ ...block, start, end, occurrenceId: block.id });
       }
       continue;
     }
-
-    const intervalMs = block.recurrence === "weekly" ? WEEK_MS : 2 * WEEK_MS;
 
     // First interval index whose occurrence could still overlap the range.
     const firstIndex = Math.max(

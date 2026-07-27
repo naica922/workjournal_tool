@@ -66,9 +66,14 @@ export function TopBar({
           <md-icon>menu</md-icon>
         </md-icon-button>
         <span className={styles.brand}>Workjournal</span>
-        <span className={styles.avatar} aria-hidden="true">
+        <Link
+          href="/settings"
+          className={styles.avatar}
+          aria-label="Your profile"
+          title="Your profile"
+        >
           {initial}
-        </span>
+        </Link>
       </header>
 
       {drawerOpen && (

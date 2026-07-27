@@ -91,8 +91,10 @@
   display: flex;
   flex-direction: column;
   padding: 1rem 1.5rem 1.5rem;
-  /* Pages taller than the viewport (e.g. settings) scroll here, not the page */
+  /* Pages taller than the viewport (e.g. settings) scroll here, not the page;
+     overscroll-behavior stops the scroll from chaining to the page (iOS). */
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @media (max-width: 700px) {

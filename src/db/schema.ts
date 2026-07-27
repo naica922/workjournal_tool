@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -115,6 +116,9 @@ export const project = pgTable("project", {
   name: text("name").notNull(),
   color: text("color").notNull(),
   icon: text("icon"),
+  // Optional project link (e.g. go/ or a doc) and point of contact.
+  link: text("link"),
+  poc: text("poc"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -126,6 +130,10 @@ export const project = pgTable("project", {
 // ---------------------------------------------------------------------------
 
 export type BlockerEntry = { blocker: string; solutionSteps: string };
+export type EventLink = {
+  type: "go" | "critique" | "buganizer" | "other";
+  url: string;
+};
 
 export const calendarBlock = pgTable("calendar_block", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -138,6 +146,7 @@ export const calendarBlock = pgTable("calendar_block", {
   title: text("title").notNull(),
   start: timestamp("start", { withTimezone: true }).notNull(),
   end: timestamp("end", { withTimezone: true }).notNull(),
+  allDay: boolean("all_day").notNull().default(false),
   description: text("description"),
   blockerEntries: jsonb("blocker_entries")
     .$type<BlockerEntry[]>()
@@ -145,12 +154,15 @@ export const calendarBlock = pgTable("calendar_block", {
     .default([]),
   location: text("location", { enum: ["home", "office"] }),
   color: text("color"),
-  recurrence: text("recurrence", { enum: ["none", "weekly", "biweekly"] })
+  recurrence: text("recurrence", {
+    enum: ["none", "daily", "weekly", "biweekly", "custom"],
+  })
     .notNull()
     .default("none"),
-  goLink: text("go_link"),
-  critiqueLink: text("critique_link"),
-  buganizerLink: text("buganizer_link"),
+  // For "custom": repeat every N units.
+  recurrenceInterval: integer("recurrence_interval"),
+  recurrenceUnit: text("recurrence_unit", { enum: ["day", "week"] }),
+  links: jsonb("links").$type<EventLink[]>().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

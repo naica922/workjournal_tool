@@ -31,6 +31,13 @@
   align-items: center;
   justify-content: center;
   font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.avatar:hover {
+  text-decoration: none;
+  box-shadow: 0 0 0 3px var(--md-sys-color-primary-container);
 }
 
 .scrim {

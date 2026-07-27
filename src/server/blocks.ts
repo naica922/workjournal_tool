@@ -46,21 +46,23 @@ async function assertOwnProject(userId: string, projectId: string) {
 }
 
 function blockValues(data: BlockInput) {
+  const isCustom = data.recurrence === "custom";
   return {
     title: data.title,
     start: new Date(data.start),
     end: new Date(data.end),
+    allDay: data.allDay,
     description: data.description || null,
     projectId: data.projectId ?? null,
     blockerEntries: data.blockerEntries.filter(
       (entry) => entry.blocker || entry.solutionSteps,
     ),
-    location: data.location ?? null,
+    location: data.location,
     color: data.color ?? null,
     recurrence: data.recurrence,
-    goLink: data.goLink || null,
-    critiqueLink: data.critiqueLink || null,
-    buganizerLink: data.buganizerLink || null,
+    recurrenceInterval: isCustom ? (data.recurrenceInterval ?? 1) : null,
+    recurrenceUnit: isCustom ? (data.recurrenceUnit ?? "day") : null,
+    links: data.links.filter((link) => link.url.trim()),
   };
 }
 
@@ -96,6 +98,40 @@ export async function updateBlock(id: string, input: unknown) {
   if (!updated) {
     throw new Error("Block not found or not yours");
   }
+  return updated;
+}
+
+// Drag-and-drop reschedule / resize: shift the block's start and end by the
+// given deltas (in ms). For recurring blocks this moves the whole series.
+export async function rescheduleBlock(
+  id: string,
+  startDeltaMs: number,
+  endDeltaMs: number,
+) {
+  const session = await requireSession();
+
+  const block = await db.query.calendarBlock.findFirst({
+    where: and(
+      eq(calendarBlock.id, id),
+      eq(calendarBlock.userId, session.user.id),
+    ),
+  });
+  if (!block) {
+    throw new Error("Block not found or not yours");
+  }
+
+  const newStart = new Date(new Date(block.start).getTime() + startDeltaMs);
+  const newEnd = new Date(new Date(block.end).getTime() + endDeltaMs);
+  if (newEnd <= newStart) {
+    throw new Error("End time must be after the start time");
+  }
+
+  const [updated] = await db
+    .update(calendarBlock)
+    .set({ start: newStart, end: newEnd, updatedAt: new Date() })
+    .where(and(eq(calendarBlock.id, id), eq(calendarBlock.userId, session.user.id)))
+    .returning({ id: calendarBlock.id });
+
   return updated;
 }
 
