@@ -3,7 +3,7 @@ import { getSession } from "@/lib/session";
 import { isProfileComplete } from "@/lib/apprenticeship";
 import { CompleteProfileForm } from "@/components/auth/complete-profile-form";
 
-export const metadata = { title: "Complete your profile - Arbeitsjournal Tool" };
+export const metadata = { title: "Complete your profile" };
 
 export default async function CompleteProfilePage() {
   const session = await getSession();

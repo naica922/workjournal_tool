@@ -3,9 +3,20 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateProfile, type getProfile } from "@/server/settings";
+import { apprenticeshipYear } from "@/lib/apprenticeship";
 import styles from "@/app/settings/settings.module.css";
 
 type Profile = Awaited<ReturnType<typeof getProfile>>;
+
+const dateFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
+function formatDate(value: string | null): string {
+  return value ? dateFmt.format(new Date(value)) : "—";
+}
 
 export function ProfileForm({ profile }: { profile: Profile }) {
   const queryClient = useQueryClient();
@@ -23,14 +34,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     event.preventDefault();
     setSaved(false);
     const data = new FormData(event.currentTarget);
-    mutation.mutate({
-      firstName: String(data.get("firstName") ?? ""),
-      lastName: String(data.get("lastName") ?? ""),
-      birthday: String(data.get("birthday") ?? ""),
-      apprenticeshipStart:
-        String(data.get("apprenticeshipStart") ?? "") || null,
-      team: String(data.get("team") ?? "") || null,
-    });
+    // Only the team is editable; identity fields are fixed after sign-up.
+    mutation.mutate({ team: String(data.get("team") ?? "") || null });
   }
 
   const isApprentice = profile.role === "apprentice";
@@ -38,62 +43,69 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   return (
     <section className={styles.card}>
       <h2 className={`${styles.cardTitle} title-medium`}>Profile</h2>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.row}>
-          <md-outlined-text-field
-            label="First name"
-            name="firstName"
-            required
-            value={profile.firstName ?? ""}
-          />
-          <md-outlined-text-field
-            label="Last name"
-            name="lastName"
-            required
-            value={profile.lastName ?? ""}
-          />
+
+      {/* Identity fields are set at sign-up and cannot be changed here. */}
+      <dl className={styles.identityGrid}>
+        <div className={styles.identityItem}>
+          <dt className={`${styles.identityLabel} body-small`}>First name</dt>
+          <dd className={`${styles.identityValue} body-medium`}>
+            {profile.firstName ?? "—"}
+          </dd>
         </div>
-        <md-outlined-text-field label="Email" disabled value={profile.email} />
-        <label className={`${styles.dateField} body-small`}>
-          Birth date
-          <input
-            type="date"
-            name="birthday"
-            required
-            defaultValue={profile.birthday ?? ""}
-          />
-        </label>
+        <div className={styles.identityItem}>
+          <dt className={`${styles.identityLabel} body-small`}>Last name</dt>
+          <dd className={`${styles.identityValue} body-medium`}>
+            {profile.lastName ?? "—"}
+          </dd>
+        </div>
+        <div className={styles.identityItem}>
+          <dt className={`${styles.identityLabel} body-small`}>Email</dt>
+          <dd className={`${styles.identityValue} body-medium`}>
+            {profile.email}
+          </dd>
+        </div>
+        <div className={styles.identityItem}>
+          <dt className={`${styles.identityLabel} body-small`}>Birth date</dt>
+          <dd className={`${styles.identityValue} body-medium`}>
+            {formatDate(profile.birthday)}
+          </dd>
+        </div>
         {isApprentice && (
-          <>
-            <label className={`${styles.dateField} body-small`}>
-              Apprenticeship start date
-              <input
-                type="date"
-                name="apprenticeshipStart"
-                defaultValue={profile.apprenticeshipStart ?? ""}
-              />
-            </label>
-            <md-outlined-text-field
-              label="Team"
-              name="team"
-              value={profile.team ?? ""}
-            />
-          </>
+          <div className={styles.identityItem}>
+            <dt className={`${styles.identityLabel} body-small`}>
+              Apprenticeship start
+            </dt>
+            <dd className={`${styles.identityValue} body-medium`}>
+              {formatDate(profile.apprenticeshipStart)}
+              {profile.apprenticeshipStart &&
+                ` · Year ${apprenticeshipYear(profile.apprenticeshipStart)}`}
+            </dd>
+          </div>
         )}
-        {mutation.isError && (
-          <p className={`${styles.error} body-medium`}>
-            {(mutation.error as Error).message}
-          </p>
-        )}
-        {saved && (
-          <p className={`${styles.success} body-medium`}>Profile saved.</p>
-        )}
-        <div className={styles.actions}>
-          <md-filled-button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Save"}
-          </md-filled-button>
-        </div>
-      </form>
+      </dl>
+
+      {isApprentice && (
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <md-outlined-text-field
+            label="Team"
+            name="team"
+            value={profile.team ?? ""}
+          />
+          {mutation.isError && (
+            <p className={`${styles.error} body-medium`}>
+              {(mutation.error as Error).message}
+            </p>
+          )}
+          {saved && (
+            <p className={`${styles.success} body-medium`}>Profile saved.</p>
+          )}
+          <div className={styles.actions}>
+            <md-filled-button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Saving..." : "Save"}
+            </md-filled-button>
+          </div>
+        </form>
+      )}
     </section>
   );
 }

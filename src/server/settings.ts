@@ -7,11 +7,9 @@ import { hostAssignment, user } from "@/db/schema";
 import { requireSession } from "@/lib/session";
 import { sendHostInviteEmail } from "@/lib/mail";
 
+// Identity fields (name, birthday, apprenticeship start) are set once at
+// sign-up and are not editable afterwards; only the team can change.
 const profileSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required").max(100),
-  lastName: z.string().trim().min(1, "Last name is required").max(100),
-  birthday: z.iso.date({ error: "Birth date is required" }),
-  apprenticeshipStart: z.iso.date().nullable(),
   team: z.string().trim().max(200).nullable(),
 });
 
@@ -43,15 +41,7 @@ export async function updateProfile(input: unknown) {
 
   const [updated] = await db
     .update(user)
-    .set({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      name: `${data.firstName} ${data.lastName}`.trim(),
-      birthday: data.birthday,
-      apprenticeshipStart: data.apprenticeshipStart,
-      team: data.team,
-      updatedAt: new Date(),
-    })
+    .set({ team: data.team, updatedAt: new Date() })
     .where(eq(user.id, session.user.id))
     .returning({ id: user.id });
 

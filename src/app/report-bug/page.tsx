@@ -2,7 +2,7 @@ import { getSession } from "@/lib/session";
 import { getProfile } from "@/server/settings";
 import { BugReportForm } from "@/components/bug-report-form";
 
-export const metadata = { title: "Report a bug - Arbeitsjournal Tool" };
+export const metadata = { title: "Report a bug" };
 
 // Public page: reachable without a session so a bug that blocks sign-in can
 // still be reported. When signed in, name and email are prefilled.

@@ -57,7 +57,7 @@ export function RegisterForm() {
           Create your account
         </h1>
         <p className={`${styles.subtitle} body-medium`}>
-          Register for the Arbeitsjournal Tool
+          Register for the Workjournal Tool
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>

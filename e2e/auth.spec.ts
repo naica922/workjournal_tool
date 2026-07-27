@@ -6,7 +6,7 @@ test("UC-01: the login screen is the first screen a visitor sees", async ({
 }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login/);
-  await expect(page.getByRole("heading", { name: "Arbeitsjournal Tool" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Workjournal Tool" })).toBeVisible();
 });
 
 test("UC-02: the sign-up link navigates to the registration screen", async ({
