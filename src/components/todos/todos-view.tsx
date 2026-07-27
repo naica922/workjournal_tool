@@ -143,9 +143,11 @@ export function TodosView() {
     <div className={styles.page}>
       <h1 className={`${styles.heading} headline-small`}>To-dos</h1>
 
-      <section className={styles.card}>
-        <h2 className={`${styles.cardTitle} title-medium`}>New to-do</h2>
-        <form className={styles.form} onSubmit={handleCreate}>
+      <div className={styles.columns}>
+        <div className={styles.left}>
+          <section className={styles.card}>
+            <h2 className={`${styles.cardTitle} title-medium`}>New to-do</h2>
+            <form className={styles.form} onSubmit={handleCreate}>
           <md-outlined-text-field label="Title" name="title" required />
           <md-outlined-text-field
             label="Description"
@@ -169,36 +171,40 @@ export function TodosView() {
               ))}
             </md-outlined-select>
           </div>
-          {error && <p className={`${styles.error} body-medium`}>{error}</p>}
-          <div className={styles.actions}>
-            <md-filled-tonal-button
-              type="submit"
-              disabled={createMutation.isPending}
-            >
-              Add to-do
-            </md-filled-tonal-button>
-          </div>
-        </form>
-      </section>
+            {error && <p className={`${styles.error} body-medium`}>{error}</p>}
+            <div className={styles.actions}>
+              <md-filled-tonal-button
+                type="submit"
+                disabled={createMutation.isPending}
+              >
+                Add to-do
+              </md-filled-tonal-button>
+            </div>
+            </form>
+          </section>
+        </div>
 
-      <section className={styles.card}>
-        <h2 className={`${styles.cardTitle} title-medium`}>Open</h2>
-        <ul className={styles.list}>
-          {open.map(renderTodo)}
-          {open.length === 0 && (
-            <li className={`${styles.empty} body-medium`}>
-              Nothing to do. Add a to-do above.
-            </li>
+        <div className={styles.right}>
+          <section className={styles.card}>
+            <h2 className={`${styles.cardTitle} title-medium`}>Open</h2>
+            <ul className={styles.list}>
+              {open.map(renderTodo)}
+              {open.length === 0 && (
+                <li className={`${styles.empty} body-medium`}>
+                  Nothing to do. Add a to-do on the left.
+                </li>
+              )}
+            </ul>
+          </section>
+
+          {done.length > 0 && (
+            <section className={styles.card}>
+              <h2 className={`${styles.cardTitle} title-medium`}>Done</h2>
+              <ul className={styles.list}>{done.map(renderTodo)}</ul>
+            </section>
           )}
-        </ul>
-      </section>
-
-      {done.length > 0 && (
-        <section className={styles.card}>
-          <h2 className={`${styles.cardTitle} title-medium`}>Done</h2>
-          <ul className={styles.list}>{done.map(renderTodo)}</ul>
-        </section>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
