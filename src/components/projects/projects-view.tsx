@@ -61,6 +61,13 @@ function ProjectCard({
 
       {open && (
         <div>
+          {(project.link || project.poc) && (
+            <p className={`${styles.projectMeta} body-medium`}>
+              {project.link && <>Link: {project.link}</>}
+              {project.link && project.poc && " · "}
+              {project.poc && <>Contact: {project.poc}</>}
+            </p>
+          )}
           <h3 className={`${styles.sectionTitle} body-small`}>
             Events ({events.length})
           </h3>
@@ -189,6 +196,8 @@ export function ProjectsView({
       name: String(data.get("name") ?? ""),
       color,
       icon,
+      link: String(data.get("link") ?? "") || undefined,
+      poc: String(data.get("poc") ?? "") || undefined,
     });
     form.reset();
   }
@@ -203,29 +212,13 @@ export function ProjectsView({
             New project
           </h2>
           <form className={styles.createForm} onSubmit={handleCreate}>
-            <div className={styles.createRow}>
-              <md-outlined-text-field label="Name" name="name" required />
-              <div
-                className={styles.swatchRow}
-                role="radiogroup"
-                aria-label="Project color"
-              >
-                {BLOCK_COLORS.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={color === c.value}
-                    aria-label={`Project color ${c.name}`}
-                    className={
-                      color === c.value ? styles.swatchSelected : styles.swatch
-                    }
-                    style={{ background: c.value }}
-                    onClick={() => setColor(c.value)}
-                  />
-                ))}
-              </div>
-            </div>
+            <md-outlined-text-field
+              class={styles.fullField}
+              label="Name"
+              name="name"
+              required
+            />
+
             <div>
               <p className={`${styles.fieldLabel} body-small`}>Icon</p>
               <div
@@ -251,12 +244,52 @@ export function ProjectsView({
                 ))}
               </div>
             </div>
+
+            <div>
+              <p className={`${styles.fieldLabel} body-small`}>Color</p>
+              <div
+                className={styles.swatchRow}
+                role="radiogroup"
+                aria-label="Project color"
+              >
+                {BLOCK_COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={color === c.value}
+                    aria-label={`Project color ${c.name}`}
+                    className={
+                      color === c.value
+                        ? styles.colorSwatchSelected
+                        : styles.colorSwatch
+                    }
+                    style={{ background: c.value }}
+                    onClick={() => setColor(c.value)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.createRow}>
+              <md-outlined-text-field
+                label="Link"
+                name="link"
+                supporting-text="e.g. go/ link or a doc"
+              />
+              <md-outlined-text-field
+                label="Point of contact"
+                name="poc"
+                supporting-text="Optional"
+              />
+            </div>
+
             <div className={styles.createActions}>
               <md-filled-tonal-button
                 type="submit"
                 disabled={createMutation.isPending}
               >
-                Create
+                Create project
               </md-filled-tonal-button>
             </div>
           </form>

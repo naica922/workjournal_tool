@@ -15,7 +15,9 @@ import {
 const projectSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
   color: z.enum(BLOCK_COLORS.map((c) => c.value) as [string, ...string[]]),
-  icon: z.string().trim().max(8).optional(),
+  icon: z.string().trim().max(40).optional(),
+  link: z.string().trim().max(500).optional(),
+  poc: z.string().trim().max(200).optional(),
 });
 
 export async function listProjects(apprenticeId?: string) {
@@ -40,6 +42,8 @@ export async function createProject(input: unknown) {
       name: data.name,
       color: data.color,
       icon: data.icon || null,
+      link: data.link || null,
+      poc: data.poc || null,
     })
     .returning();
   return created;

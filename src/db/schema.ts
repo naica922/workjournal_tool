@@ -116,6 +116,9 @@ export const project = pgTable("project", {
   name: text("name").notNull(),
   color: text("color").notNull(),
   icon: text("icon"),
+  // Optional project link (e.g. go/ or a doc) and point of contact.
+  link: text("link"),
+  poc: text("poc"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

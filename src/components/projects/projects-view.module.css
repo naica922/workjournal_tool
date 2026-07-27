@@ -23,19 +23,44 @@
 .createForm {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+}
+
+.fullField {
+  width: 100%;
 }
 
 .createRow {
   display: flex;
   gap: 0.75rem;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
 .createRow md-outlined-text-field {
   flex: 1;
   min-width: 12rem;
+}
+
+.colorSwatch {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.colorSwatchSelected {
+  composes: colorSwatch;
+  border-color: var(--md-sys-color-on-surface);
+  box-shadow: 0 0 0 2px var(--md-sys-color-surface);
+}
+
+.projectMeta {
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0.25rem 0 0.5rem;
+  overflow-wrap: anywhere;
 }
 
 .createActions {
