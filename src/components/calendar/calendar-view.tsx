@@ -183,6 +183,8 @@ export function CalendarView({
     if (isMobile) {
       api.gotoDate(selectedDay);
     }
+    // Open scrolled to the work day (00:00-06:00 is above, evening below).
+    api.scrollToTime("06:00:00");
   }, [isMobile, selectedDay]);
 
   const { data, isPending } = useQuery({
@@ -454,8 +456,11 @@ export function CalendarView({
           hiddenDays={[0, 6]}
           dayHeaders={!isMobile}
           allDaySlot
-          slotMinTime="06:00:00"
-          slotMaxTime="20:00:00"
+          // Full 24 hours; the view opens scrolled to the work day but can be
+          // scrolled up to 00:00 and down to the evening.
+          slotMinTime="00:00:00"
+          slotMaxTime="24:00:00"
+          scrollTime="06:00:00"
           snapDuration="00:15:00"
           nowIndicator
           selectable={!readOnly}
