@@ -1,0 +1,144 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 44rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.heading {
+  margin: 0;
+}
+
+.card {
+  background: var(--md-sys-color-surface);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.createRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.createRow md-outlined-text-field[label="Name"] {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.iconField {
+  width: 6rem;
+}
+
+.swatchRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatchSelected {
+  composes: swatch;
+  border-color: var(--md-sys-color-on-surface);
+  box-shadow: 0 0 0 2px var(--md-sys-color-surface);
+}
+
+.projectHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.projectDot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.projectName {
+  flex: 1;
+  min-width: 0;
+}
+
+.projectHours {
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.sectionTitle {
+  margin: 1rem 0 0.25rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.listItem {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  align-items: baseline;
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.listItemText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.listItemMeta {
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.pair {
+  border-left: 3px solid var(--md-sys-color-outline-variant);
+  padding-left: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.pairLabel {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.empty {
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0;
+}
+
+.error {
+  color: var(--md-sys-color-error);
+  margin: 0;
+}

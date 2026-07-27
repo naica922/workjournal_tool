@@ -92,6 +92,9 @@ export function HostDashboard() {
                   {apprentice.team && ` · ${apprentice.team}`}
                 </span>
               </span>
+              <Link href={`/apprentices/${apprentice.id}/projects`}>
+                <md-text-button type="button">Projects</md-text-button>
+              </Link>
               <Link href={`/apprentices/${apprentice.id}`}>
                 <md-outlined-button type="button">
                   Open calendar

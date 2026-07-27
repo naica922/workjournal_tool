@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -102,22 +103,46 @@ export const hostAssignment = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Projects: an apprentice groups journal entries into projects (e.g.
+// "coop event") to show a host how much time went into each one.
+// ---------------------------------------------------------------------------
+
+export const project = pgTable("project", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  color: text("color").notNull(),
+  icon: text("icon"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
 // Calendar blocks: one row per journal entry of a apprentice.
 // Recurring events store the recurrence on the block itself; occurrences are
-// expanded when the calendar is read.
+// expanded when the calendar is read. Each blocker is paired with its own
+// solution steps in blockerEntries.
 // ---------------------------------------------------------------------------
+
+export type BlockerEntry = { blocker: string; solutionSteps: string };
 
 export const calendarBlock = pgTable("calendar_block", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  projectId: uuid("project_id").references(() => project.id, {
+    onDelete: "set null",
+  }),
   title: text("title").notNull(),
   start: timestamp("start", { withTimezone: true }).notNull(),
   end: timestamp("end", { withTimezone: true }).notNull(),
   description: text("description"),
-  blockers: text("blockers"),
-  solutionSteps: text("solution_steps"),
+  blockerEntries: jsonb("blocker_entries")
+    .$type<BlockerEntry[]>()
+    .notNull()
+    .default([]),
   location: text("location", { enum: ["home", "office"] }),
   color: text("color"),
   recurrence: text("recurrence", { enum: ["none", "weekly", "biweekly"] })
@@ -132,5 +157,6 @@ export const calendarBlock = pgTable("calendar_block", {
 
 export type User = typeof user.$inferSelect;
 export type HostAssignment = typeof hostAssignment.$inferSelect;
+export type Project = typeof project.$inferSelect;
 export type CalendarBlock = typeof calendarBlock.$inferSelect;
 export type NewCalendarBlock = typeof calendarBlock.$inferInsert;

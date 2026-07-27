@@ -25,6 +25,7 @@ import {
   listBlocks,
   updateBlock,
 } from "@/server/blocks";
+import { listProjects } from "@/server/projects";
 import { DEFAULT_BLOCK_COLOR, type BlockInput } from "@/lib/blocks";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import { EventDialog, type DialogState } from "./event-dialog";
@@ -53,12 +54,14 @@ function renderEvent(arg: EventContentArg) {
   const location = event.extendedProps.location as
     | keyof typeof LOCATION_LABEL
     | null;
+  const projectLabel = event.extendedProps.projectLabel as string | null;
   return (
     <div className="wj-event">
       <span className="wj-event-title">{event.title}</span>{" "}
       <span className="wj-event-meta">
         {time}
         {location ? ` · ${LOCATION_LABEL[location]}` : ""}
+        {projectLabel ? ` · ${projectLabel}` : ""}
       </span>
     </div>
   );
@@ -162,6 +165,16 @@ export function CalendarView({
       }),
   });
 
+  const { data: projects } = useQuery({
+    queryKey: ["projects", ownerKey],
+    queryFn: () => listProjects(ownerId),
+  });
+
+  const projectById = useMemo(
+    () => new Map((projects ?? []).map((p) => [p.id, p])),
+    [projects],
+  );
+
   const occurrences = useMemo(() => {
     const map = new Map<string, BlockOccurrence>();
     for (const occurrence of data ?? []) {
@@ -172,17 +185,27 @@ export function CalendarView({
 
   const events = useMemo(
     () =>
-      (data ?? []).map((occurrence) => ({
-        id: occurrence.occurrenceId,
-        title: occurrence.title,
-        start: occurrence.start,
-        end: occurrence.end,
-        backgroundColor: pastel(occurrence.color ?? DEFAULT_BLOCK_COLOR),
-        borderColor: "transparent",
-        textColor: "#1f1f1f",
-        extendedProps: { location: occurrence.location },
-      })),
-    [data],
+      (data ?? []).map((occurrence) => {
+        const project = occurrence.projectId
+          ? projectById.get(occurrence.projectId)
+          : undefined;
+        return {
+          id: occurrence.occurrenceId,
+          title: occurrence.title,
+          start: occurrence.start,
+          end: occurrence.end,
+          backgroundColor: pastel(occurrence.color ?? DEFAULT_BLOCK_COLOR),
+          borderColor: "transparent",
+          textColor: "#1f1f1f",
+          extendedProps: {
+            location: occurrence.location,
+            projectLabel: project
+              ? `${project.icon ? `${project.icon} ` : ""}${project.name}`
+              : null,
+          },
+        };
+      }),
+    [data, projectById],
   );
 
   const invalidate = () =>
@@ -349,6 +372,7 @@ export function CalendarView({
           allDaySlot={false}
           slotMinTime="06:00:00"
           slotMaxTime="20:00:00"
+          snapDuration="00:15:00"
           nowIndicator
           selectable={!readOnly && !isMobile}
           selectMirror
@@ -392,6 +416,7 @@ export function CalendarView({
           key={dialogKey}
           state={dialog}
           quick={isMobile}
+          projects={projects ?? []}
           readOnly={readOnly}
           pending={saveMutation.isPending || deleteMutation.isPending}
           error={dialogError}
