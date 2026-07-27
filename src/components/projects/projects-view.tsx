@@ -7,7 +7,7 @@ import {
   deleteProject,
   projectOverview,
 } from "@/server/projects";
-import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR } from "@/lib/blocks";
+import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, PROJECT_ICONS } from "@/lib/blocks";
 import { formatMinutes, type ProjectOverview } from "@/lib/project-stats";
 import styles from "./projects-view.module.css";
 
@@ -37,12 +37,20 @@ function ProjectCard({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span
-          className={styles.projectDot}
-          style={{ background: project.color }}
-        />
+        {project.icon ? (
+          <md-icon
+            className={styles.projectIcon}
+            style={{ color: project.color }}
+          >
+            {project.icon}
+          </md-icon>
+        ) : (
+          <span
+            className={styles.projectDot}
+            style={{ background: project.color }}
+          />
+        )}
         <span className={`${styles.projectName} title-medium`}>
-          {project.icon ? `${project.icon} ` : ""}
           {project.name}
         </span>
         <span className={`${styles.projectHours} body-medium`}>
@@ -145,6 +153,7 @@ export function ProjectsView({
   const queryClient = useQueryClient();
   const ownerKey = ownerId ?? "me";
   const [color, setColor] = useState<string>(DEFAULT_BLOCK_COLOR);
+  const [icon, setIcon] = useState<string>(PROJECT_ICONS[0]);
   const [error, setError] = useState<string | null>(null);
 
   const { data: overviews } = useQuery({
@@ -179,7 +188,7 @@ export function ProjectsView({
     createMutation.mutate({
       name: String(data.get("name") ?? ""),
       color,
-      icon: String(data.get("icon") ?? "") || undefined,
+      icon,
     });
     form.reset();
   }
@@ -193,40 +202,63 @@ export function ProjectsView({
           <h2 className="title-medium" style={{ margin: 0 }}>
             New project
           </h2>
-          <form className={styles.createRow} onSubmit={handleCreate}>
-            <md-outlined-text-field label="Name" name="name" required />
-            <md-outlined-text-field
-              class={styles.iconField}
-              label="Icon"
-              name="icon"
-              supporting-text="Optional emoji"
-            />
-            <div
-              className={styles.swatchRow}
-              role="radiogroup"
-              aria-label="Project color"
-            >
-              {BLOCK_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={color === c.value}
-                  aria-label={`Project color ${c.name}`}
-                  className={
-                    color === c.value ? styles.swatchSelected : styles.swatch
-                  }
-                  style={{ background: c.value }}
-                  onClick={() => setColor(c.value)}
-                />
-              ))}
+          <form className={styles.createForm} onSubmit={handleCreate}>
+            <div className={styles.createRow}>
+              <md-outlined-text-field label="Name" name="name" required />
+              <div
+                className={styles.swatchRow}
+                role="radiogroup"
+                aria-label="Project color"
+              >
+                {BLOCK_COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={color === c.value}
+                    aria-label={`Project color ${c.name}`}
+                    className={
+                      color === c.value ? styles.swatchSelected : styles.swatch
+                    }
+                    style={{ background: c.value }}
+                    onClick={() => setColor(c.value)}
+                  />
+                ))}
+              </div>
             </div>
-            <md-filled-tonal-button
-              type="submit"
-              disabled={createMutation.isPending}
-            >
-              Create
-            </md-filled-tonal-button>
+            <div>
+              <p className={`${styles.fieldLabel} body-small`}>Icon</p>
+              <div
+                className={styles.iconGrid}
+                role="radiogroup"
+                aria-label="Project icon"
+              >
+                {PROJECT_ICONS.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    role="radio"
+                    aria-checked={icon === name}
+                    aria-label={name}
+                    className={
+                      icon === name ? styles.iconButtonSelected : styles.iconButton
+                    }
+                    style={icon === name ? { color } : undefined}
+                    onClick={() => setIcon(name)}
+                  >
+                    <md-icon>{name}</md-icon>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={styles.createActions}>
+              <md-filled-tonal-button
+                type="submit"
+                disabled={createMutation.isPending}
+              >
+                Create
+              </md-filled-tonal-button>
+            </div>
           </form>
           {error && <p className={`${styles.error} body-medium`}>{error}</p>}
         </section>

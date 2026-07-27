@@ -12,6 +12,29 @@ export const BLOCK_COLORS = [
 
 export const DEFAULT_BLOCK_COLOR = BLOCK_COLORS[0].value;
 
+// Selectable project icons (Material Symbols names, rendered with md-icon).
+export const PROJECT_ICONS = [
+  "folder",
+  "work",
+  "school",
+  "groups",
+  "campaign",
+  "event",
+  "code",
+  "bug_report",
+  "lightbulb",
+  "rocket_launch",
+  "handshake",
+  "celebration",
+  "analytics",
+  "business",
+  "palette",
+  "star",
+] as const;
+
+export const CRITIQUE_PREFIX = "cl/";
+export const BUGANIZER_PREFIX = "b/";
+
 export const blockerEntrySchema = z.object({
   blocker: z.string().trim().max(5000),
   solutionSteps: z.string().trim().max(5000),

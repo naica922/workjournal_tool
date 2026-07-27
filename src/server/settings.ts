@@ -139,20 +139,24 @@ export async function addHostInvite(input: { email: string }) {
     .values({ apprenticeId: session.user.id, hostEmail: email })
     .returning();
 
-  // The invitation exists either way; a mail failure must not lose it.
-  let emailSent = true;
-  try {
-    await sendHostInviteEmail({
-      to: email,
-      apprenticeName: session.user.name,
-      apprenticeEmail: session.user.email,
-    });
-  } catch (error) {
-    console.error("Failed to send host invite email", error);
-    emailSent = false;
+  // Without an SMTP server, invitations are accepted in-app instead of by
+  // email - that is a normal setup, not an error.
+  const mailConfigured = !!process.env.SMTP_HOST;
+  let emailSent = false;
+  if (mailConfigured) {
+    try {
+      await sendHostInviteEmail({
+        to: email,
+        apprenticeName: session.user.name,
+        apprenticeEmail: session.user.email,
+      });
+      emailSent = true;
+    } catch (error) {
+      console.error("Failed to send host invite email", error);
+    }
   }
 
-  return { ...created, emailSent };
+  return { ...created, mailConfigured, emailSent };
 }
 
 export async function listMyHosts() {
