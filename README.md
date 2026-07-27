@@ -1,46 +1,42 @@
 # Arbeitsjournal Tool
 
-A work-journal web app for apprentices and their hosts, built as part of a trial
-IPA at Google Switzerland. Apprentices document their work in a weekly calendar;
+A workjournal web app for apprentices and their hosts, built as part of a trial
+IPA. Apprentices document their work in a weekly calendar and
 hosts get an overview of the work of every apprentice assigned to them.
 
 **Live app: [workjournaltool.vercel.app](https://workjournaltool.vercel.app)**
 
 ## What it does
 
-- **Weekly calendar** — apprentices log their work as calendar entries with a
-  title, time, description, work location (office / home) and a color.
-- **Blockers & solutions** — each entry can document one or more blockers, each
-  with its own solution steps.
-- **Links** — attach Go, Critique and Buganizer links to an entry.
-- **Projects** — group entries into projects (e.g. "Coop event") to see how much
-  time went into each one, together with all its entries, blockers and links.
-- **Hosts** — an apprentice invites a host by email; once accepted, the host can
-  review that apprentice's calendar and projects.
+- **Weekly calendar** apprentices log their work as calendar entries with a
+  title, time, description, work location and a color
+- **Blockers & solutions** each entry can document one or more blockers, each
+  with its own solution steps
+- **Links** attach go, critique and buganizer links to an entry
+- **Projects** group entries into projects (e.g "Apprentice day event") to see how much
+  time went into each one, together with all its entries, blockers and links
+- **Hosts** an apprentice invites a host by email, once accepted, the host can
+  review that apprentice's calendar and projects
 
 ## How to use the website
 
 1. **Create an account** at
    [workjournaltool.vercel.app](https://workjournaltool.vercel.app) with your
-   email and password (or sign in with Google), choosing whether you are an
-   apprentice or a host. Enter your name, birth date and — as an apprentice —
-   your apprenticeship start date.
-2. **Add calendar entries**: on the calendar, drag over a time range (desktop)
-   or tap a slot (mobile), or use the **Create** button. Fill in the details and
-   save.
-3. **Organize with projects**: open **Projects**, create a project with a name,
-   color and icon, then pick that project when creating or editing an entry.
-4. **Share with your host**: in **Settings**, add your host's email. Once they
+   email and password (or sign in with Google)
+2. **Add calendar entries** on the calendar, drag over a time range (desktop)
+   or tap a slot (mobile), or use the Create button. Fill in the details and
+   save
+3. **Organize with projects** open Projects, create a project with a name,
+   color and icon, then pick that project when creating or editing an entry
+4. **Share with your host** in Settings, add your host's email. Once they
    accept the invitation, they can see your calendar and projects.
-5. As a **host**, open **My apprentices** to review each apprentice's calendar
-   and projects.
+5. As a **host**, open My apprentices to review each apprentice's calendar
+   and projects
 
 ## Found a bug?
 
 Please report it at **[/report-bug](https://workjournaltool.vercel.app/report-bug)**
-(also linked from the sign-in page and the in-app menu). The form asks for your
-name, email, a description of the problem, your device, whether you are on mobile
-or a laptop, which page it happened on, and an optional screenshot.
+(also linked from the sign-in page and the in-app menu)
 
 ---
 
