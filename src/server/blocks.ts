@@ -46,10 +46,12 @@ async function assertOwnProject(userId: string, projectId: string) {
 }
 
 function blockValues(data: BlockInput) {
+  const isCustom = data.recurrence === "custom";
   return {
     title: data.title,
     start: new Date(data.start),
     end: new Date(data.end),
+    allDay: data.allDay,
     description: data.description || null,
     projectId: data.projectId ?? null,
     blockerEntries: data.blockerEntries.filter(
@@ -58,6 +60,8 @@ function blockValues(data: BlockInput) {
     location: data.location ?? null,
     color: data.color ?? null,
     recurrence: data.recurrence,
+    recurrenceInterval: isCustom ? (data.recurrenceInterval ?? 1) : null,
+    recurrenceUnit: isCustom ? (data.recurrenceUnit ?? "day") : null,
     goLink: data.goLink || null,
     critiqueLink: data.critiqueLink || null,
     buganizerLink: data.buganizerLink || null,

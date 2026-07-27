@@ -45,6 +45,7 @@ export const blockInputSchema = z
     title: z.string().trim().min(1, "Title is required").max(200),
     start: z.iso.datetime({ offset: true, local: true }),
     end: z.iso.datetime({ offset: true, local: true }),
+    allDay: z.boolean().default(false),
     description: z.string().max(5000).optional(),
     projectId: z.uuid().nullable().optional(),
     blockerEntries: z.array(blockerEntrySchema).max(20).default([]),
@@ -52,7 +53,11 @@ export const blockInputSchema = z
     color: z
       .enum(BLOCK_COLORS.map((c) => c.value) as [string, ...string[]])
       .optional(),
-    recurrence: z.enum(["none", "weekly", "biweekly"]).default("none"),
+    recurrence: z
+      .enum(["none", "daily", "weekly", "biweekly", "custom"])
+      .default("none"),
+    recurrenceInterval: z.coerce.number().int().min(1).max(52).nullable().optional(),
+    recurrenceUnit: z.enum(["day", "week"]).nullable().optional(),
     goLink: z.string().max(500).optional(),
     critiqueLink: z.string().max(500).optional(),
     buganizerLink: z.string().max(500).optional(),
@@ -60,7 +65,16 @@ export const blockInputSchema = z
   .refine((data) => new Date(data.end) > new Date(data.start), {
     message: "End time must be after the start time",
     path: ["end"],
-  });
+  })
+  .refine(
+    (data) =>
+      data.recurrence !== "custom" ||
+      (!!data.recurrenceInterval && !!data.recurrenceUnit),
+    {
+      message: "Choose how often the custom event repeats",
+      path: ["recurrenceInterval"],
+    },
+  );
 
 export type BlockInput = z.infer<typeof blockInputSchema>;
 

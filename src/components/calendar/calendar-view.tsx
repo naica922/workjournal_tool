@@ -50,8 +50,9 @@ function pastel(color: string) {
 
 function renderEvent(arg: EventContentArg) {
   const { event } = arg;
-  const time =
-    event.start && event.end
+  const time = event.allDay
+    ? "All day"
+    : event.start && event.end
       ? `${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}`
       : "";
   const location = event.extendedProps.location as
@@ -224,6 +225,7 @@ export function CalendarView({
           title: occurrence.title,
           start: occurrence.start,
           end: occurrence.end,
+          allDay: occurrence.allDay,
           backgroundColor: pastel(occurrence.color ?? DEFAULT_BLOCK_COLOR),
           borderColor: "transparent",
           textColor: "#1f1f1f",
@@ -453,7 +455,7 @@ export function CalendarView({
           firstDay={1}
           hiddenDays={[0, 6]}
           dayHeaders={!isMobile}
-          allDaySlot={false}
+          allDaySlot
           slotMinTime="06:00:00"
           slotMaxTime="20:00:00"
           snapDuration="00:15:00"

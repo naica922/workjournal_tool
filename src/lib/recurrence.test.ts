@@ -14,7 +14,10 @@ function makeBlock(overrides: Partial<CalendarBlock> = {}): CalendarBlock {
     blockerEntries: [],
     location: null,
     color: null,
+    allDay: false,
     recurrence: "none",
+    recurrenceInterval: null,
+    recurrenceUnit: null,
     goLink: null,
     critiqueLink: null,
     buganizerLink: null,
@@ -65,6 +68,37 @@ describe("expandOccurrences", () => {
       earlierWeekEnd,
     );
     expect(result).toHaveLength(0);
+  });
+
+  it("repeats a daily block every day in the range", () => {
+    const result = expandOccurrences(
+      [makeBlock({ recurrence: "daily" })],
+      weekStart,
+      weekEnd,
+    );
+    // Mon-Fri window: Mon, Tue, Wed, Thu (Fri 25th is the exclusive end).
+    expect(result.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("repeats a custom 'every 3 days' block correctly", () => {
+    const result = expandOccurrences(
+      [
+        makeBlock({
+          recurrence: "custom",
+          recurrenceInterval: 3,
+          recurrenceUnit: "day",
+        }),
+      ],
+      new Date("2026-07-20T00:00:00Z"),
+      new Date("2026-07-30T00:00:00Z"),
+    );
+    // From Jul 20: 20, 23, 26, 29 = 4 occurrences.
+    expect(result.map((r) => r.start.toISOString().slice(0, 10))).toEqual([
+      "2026-07-20",
+      "2026-07-23",
+      "2026-07-26",
+      "2026-07-29",
+    ]);
   });
 
   it("repeats a biweekly block only every second week", () => {
