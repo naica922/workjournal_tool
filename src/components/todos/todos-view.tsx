@@ -71,8 +71,8 @@ export function TodosView() {
     onError: (e: Error) => setError(e.message),
   });
 
-  const projectName = (id: string | null) =>
-    id ? (projects?.find((p) => p.id === id)?.name ?? null) : null;
+  const projectFor = (id: string | null) =>
+    id ? (projects?.find((p) => p.id === id) ?? null) : null;
 
   function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,6 +94,7 @@ export function TodosView() {
   function renderTodo(t: Todo) {
     const deadline = t.deadline ? new Date(t.deadline) : null;
     const overdue = deadline && !t.done && deadline.getTime() < Date.now();
+    const project = projectFor(t.projectId);
     return (
       <li key={t.id} className={styles.item}>
         <md-checkbox
@@ -132,14 +133,19 @@ export function TodosView() {
                   {dateTimeFmt.format(deadline)}
                 </span>
               )}
-              {projectName(t.projectId) && (
-                <span className={styles.projectTag}>
-                  <md-icon
-                    style={{ fontSize: "1rem", width: "1rem", height: "1rem" }}
-                  >
-                    folder
-                  </md-icon>
-                  {projectName(t.projectId)}
+              {project && (
+                <span
+                  className={styles.projectTag}
+                  style={{
+                    background: `color-mix(in srgb, ${project.color} 14%, white)`,
+                    color: `color-mix(in srgb, ${project.color} 75%, black)`,
+                  }}
+                >
+                  <span
+                    className={styles.projectDot}
+                    style={{ background: project.color }}
+                  />
+                  {project.name}
                 </span>
               )}
             </p>
@@ -200,12 +206,12 @@ export function TodosView() {
           </div>
             {error && <p className={`${styles.error} body-medium`}>{error}</p>}
             <div className={styles.actions}>
-              <md-filled-tonal-button
+              <md-filled-button
                 type="submit"
                 disabled={createMutation.isPending}
               >
                 Add to-do
-              </md-filled-tonal-button>
+              </md-filled-button>
             </div>
             </form>
           </section>
