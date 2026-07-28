@@ -16,7 +16,7 @@ test("UC-05/UC-06: an apprentice creates a calendar block with details and sees 
 
   await textField(page, "title").fill("Write IPA documentation");
   // Blockers live in a collapsible section as blocker/solution pairs.
-  await page.getByRole("button", { name: /Blockers & solutions/ }).click();
+  // The blockers card is open by default on desktop.
   await page.locator("md-text-button", { hasText: "Add blocker" }).click();
   await page
     .locator('[data-testid="blocker-0"] textarea')

@@ -48,17 +48,20 @@ function addHour(time: string): string {
 }
 
 
-// Collapsible section like "Blockers & solutions" or "Links & more".
+// Collapsible card like "Blockers & solutions" or "Links & more"; open by
+// default on desktop, collapsed on the mobile sheet to keep it short.
 function Expandable({
   label,
   badge,
+  defaultOpen = false,
   children,
 }: {
   label: string;
   badge?: number;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className={styles.expandable}>
       <button
@@ -214,13 +217,22 @@ export function EventDialog({
   }
 
   return (
-    <md-dialog ref={dialogRef} quick={quick || undefined}>
-      <div slot="headline">
-        {readOnly
-          ? "Journal entry"
-          : block
-            ? "Edit journal entry"
-            : "New journal entry"}
+    <md-dialog ref={dialogRef} quick={quick || undefined} class={styles.dialog}>
+      <div slot="headline" className={styles.headline}>
+        <span>
+          {readOnly
+            ? "Journal entry"
+            : block
+              ? "Edit journal entry"
+              : "New journal entry"}
+        </span>
+        <md-icon-button
+          type="button"
+          title="Close"
+          onClick={() => dialogRef.current?.close()}
+        >
+          <md-icon>close</md-icon>
+        </md-icon-button>
       </div>
       <form
         id="event-form"
@@ -236,6 +248,8 @@ export function EventDialog({
           }
         }}
       >
+        <div className={styles.columns}>
+          <div className={styles.column}>
         <md-outlined-text-field
           label="Title"
           name="title"
@@ -447,8 +461,14 @@ export function EventDialog({
             ))}
           </div>
         </div>
+          </div>
 
-        <Expandable label="Blockers & solutions" badge={blockerEntries.length}>
+          <div className={styles.column}>
+        <Expandable
+          label="Blockers & solutions"
+          badge={blockerEntries.length}
+          defaultOpen={!quick}
+        >
           {blockerEntries.map((entry, index) => (
             <div key={index} className={styles.blockerPair}>
               <div className={styles.blockerPairHeader}>
@@ -468,12 +488,11 @@ export function EventDialog({
                 )}
               </div>
               <md-outlined-text-field
-                label="Blocker"
                 data-testid={`blocker-${index}`}
                 type="textarea"
                 rows={2}
                 disabled={readOnly}
-                placeholder="What blocked you, and who did you ask for help?"
+                placeholder="Blocker"
                 value={entry.blocker}
                 onInput={(e: React.FormEvent) =>
                   updateEntry(
@@ -484,12 +503,11 @@ export function EventDialog({
                 }
               />
               <md-outlined-text-field
-                label="Solution steps"
                 data-testid={`solution-${index}`}
                 type="textarea"
                 rows={2}
                 disabled={readOnly}
-                placeholder="Steps you took to solve this blocker"
+                placeholder="Solution steps"
                 value={entry.solutionSteps}
                 onInput={(e: React.FormEvent) =>
                   updateEntry(
@@ -511,6 +529,7 @@ export function EventDialog({
                 ])
               }
             >
+              <md-icon slot="icon">add</md-icon>
               Add blocker
             </md-text-button>
           )}
@@ -519,7 +538,11 @@ export function EventDialog({
           )}
         </Expandable>
 
-        <Expandable label="Links & more" badge={links.length}>
+        <Expandable
+          label="Links & more"
+          badge={links.length}
+          defaultOpen={!quick}
+        >
           {links.map((link, index) => (
             <div key={index} className={styles.linkRow}>
               <md-outlined-select
@@ -594,6 +617,8 @@ export function EventDialog({
             <p className={`${styles.groupLabel} body-small`}>No links.</p>
           )}
         </Expandable>
+          </div>
+        </div>
 
         {(localError || error) && (
           <p className={`${styles.error} body-medium`}>{localError || error}</p>

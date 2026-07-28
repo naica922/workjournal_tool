@@ -1,8 +1,48 @@
+/* Wide, plain-white dialog like the mock */
+.dialog {
+  --md-dialog-container-color: var(--md-sys-color-surface);
+  --md-dialog-container-shape: 1.25rem;
+}
+
+@media (min-width: 701px) {
+  .dialog {
+    min-width: min(58rem, calc(100vw - 2rem));
+    max-width: min(58rem, calc(100vw - 2rem));
+  }
+}
+
+.headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-width: min(26rem, 80vw);
+}
+
+/* Form fields on the left, the blockers/links cards on the right */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .row {
@@ -88,24 +128,27 @@
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 0.75rem;
   overflow: hidden;
+  background: var(--md-sys-color-surface);
 }
 
+/* Card header strip like the mock: light grey, chevron left, badge right */
 .expandableToggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  background: none;
+  background: var(--md-sys-color-surface-container-low);
   border: none;
   cursor: pointer;
   padding: 0.75rem 1rem;
   font: inherit;
+  font-weight: 500;
   color: var(--md-sys-color-on-surface);
   text-align: left;
 }
 
 .expandableToggle:hover {
-  background: var(--md-sys-color-surface-container-high);
+  background: var(--md-sys-color-surface-container);
 }
 
 .expandableBadge {
@@ -121,7 +164,12 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 0.25rem 1rem 1rem;
+  padding: 1rem;
+}
+
+/* The "+ Add …" buttons sit centered under the card content */
+.expandableContent > md-text-button {
+  align-self: center;
 }
 
 .blockerPair {
@@ -155,10 +203,14 @@
   min-width: 0;
 }
 
+/* Footer separated from the content by a full-width rule like the mock */
 .actions {
   display: flex;
   gap: 0.5rem;
   width: 100%;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  margin: 0 -1.5rem;
+  padding: 1rem 1.5rem 0;
 }
 
 .actionsSpacer {
