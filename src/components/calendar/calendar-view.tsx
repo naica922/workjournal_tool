@@ -44,15 +44,10 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", {
 
 const LOCATION_LABEL = { home: "Home", office: "Office" } as const;
 
-// Blocks render like the mock: pastel background, dark text.
-function pastel(color: string) {
-  return `color-mix(in srgb, ${color} 30%, white)`;
-}
-
 function renderEvent(arg: EventContentArg) {
   const { event } = arg;
   const time = event.allDay
-    ? "All day"
+    ? "all day"
     : event.start && event.end
       ? `${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}`
       : "";
@@ -61,38 +56,42 @@ function renderEvent(arg: EventContentArg) {
     | null;
   const projectName = event.extendedProps.projectName as string | null;
   const projectIcon = event.extendedProps.projectIcon as string | null;
-  const projectColor = event.extendedProps.projectColor as string | null;
   const links = (event.extendedProps.links as string[]) ?? [];
+  // Month cells fit one line: just the title next to the time.
+  if (arg.view.type === "dayGridMonth" && !event.allDay) {
+    return (
+      <div className="wj-event wj-event--allday">
+        <span className="wj-event-title">{event.title}</span>
+        <span className="wj-event-meta">
+          {event.start ? timeFormat.format(event.start) : ""}
+        </span>
+      </div>
+    );
+  }
+  // All-day bars are a single compact line; timed blocks stack their lines
+  // like the mock (title, time, location, then a links pill).
   return (
-    <div className="wj-event">
-      <span className="wj-event-title">{event.title}</span>{" "}
-      <span className="wj-event-meta">
-        {time}
-        {location ? ` · ${LOCATION_LABEL[location]}` : ""}
-        {projectName ? (
-          <>
-            {" · "}
-            {projectIcon && (
-              <md-icon
-                class="wj-event-project-icon"
-                style={projectColor ? { color: projectColor } : undefined}
-              >
-                {projectIcon}
-              </md-icon>
-            )}
-            {projectName}
-          </>
-        ) : null}
-      </span>
-      {/* Links appear only when the block is tall enough (CSS clamps them) */}
-      {links.length > 0 && (
-        <span className="wj-event-links">
-          {links.map((link, index) => (
-            <span key={index} className="wj-event-link">
-              <md-icon class="wj-event-link-icon">link</md-icon>
-              {link}
-            </span>
-          ))}
+    <div className={event.allDay ? "wj-event wj-event--allday" : "wj-event"}>
+      <span className="wj-event-title">{event.title}</span>
+      <span className="wj-event-meta">{time}</span>
+      {(location || projectName) && !event.allDay && (
+        <span className="wj-event-meta">
+          {location ? LOCATION_LABEL[location] : null}
+          {location && projectName ? " · " : null}
+          {projectName ? (
+            <>
+              {projectIcon && (
+                <md-icon class="wj-event-project-icon">{projectIcon}</md-icon>
+              )}
+              {projectName}
+            </>
+          ) : null}
+        </span>
+      )}
+      {/* The pill appears only when the block is tall enough (CSS clamps it) */}
+      {links.length > 0 && !event.allDay && (
+        <span className="wj-event-pill">
+          {links.length} {links.length === 1 ? "link" : "links"}
         </span>
       )}
     </div>
@@ -231,9 +230,9 @@ export function CalendarView({
           start: occurrence.start,
           end: occurrence.end,
           allDay: occurrence.allDay,
-          backgroundColor: pastel(occurrence.color ?? DEFAULT_BLOCK_COLOR),
+          backgroundColor: occurrence.color ?? DEFAULT_BLOCK_COLOR,
           borderColor: "transparent",
-          textColor: "#1f1f1f",
+          textColor: "#ffffff",
           extendedProps: {
             location: occurrence.location,
             projectName: project?.name ?? null,
@@ -383,6 +382,17 @@ export function CalendarView({
     return () => window.removeEventListener("workjournal:create", handleCreate);
   }, [readOnly]);
 
+  // The sidebar mini month emits this; jump the main calendar there.
+  useEffect(() => {
+    const handleGoto = (event: Event) => {
+      const date = new Date((event as CustomEvent<number>).detail);
+      setSelectedDay(date);
+      calendarRef.current?.getApi().gotoDate(date);
+    };
+    window.addEventListener("workjournal:goto-date", handleGoto);
+    return () => window.removeEventListener("workjournal:goto-date", handleGoto);
+  }, []);
+
   const weekDays = useMemo(() => workweekOf(selectedDay), [selectedDay]);
   const today = new Date();
 
@@ -510,6 +520,8 @@ export function CalendarView({
           eventStartEditable={!readOnly}
           eventDurationEditable={!readOnly}
           events={events}
+          // Month view renders timed events as filled chips, not dot rows
+          eventDisplay="block"
           select={handleSelect}
           dateClick={handleDateClick}
           eventClick={handleEventClick}

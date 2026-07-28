@@ -32,10 +32,10 @@ test("UC-05/UC-06: an apprentice creates a calendar block with details and sees 
     hasText: "Write IPA documentation",
   });
   await expect(event).toBeVisible({ timeout: 15_000 });
-  // The chosen green color is applied to the block (as a pastel mix).
+  // The chosen green color fills the block (saturated, like the mock).
   await expect(event).toHaveAttribute(
     "style",
-    /color-mix\(in srgb, (#33b679|rgb\(51, 182, 121\)) 30%, white\)/,
+    /background-color:\s*(#33b679|rgb\(51, 182, 121\))/,
   );
   // The block shows its time range like in the mock.
   await expect(event).toContainText("09:00 – 10:30");

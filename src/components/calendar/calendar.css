@@ -1,7 +1,17 @@
 /* Material 3 styling for FullCalendar */
 .fc {
-  --fc-border-color: var(--md-sys-color-outline-variant);
-  --fc-today-bg-color: transparent;
+  /* Grid lines lighter than the M3 outline so events carry the color */
+  --fc-border-color: color-mix(
+    in srgb,
+    var(--md-sys-color-outline-variant) 55%,
+    var(--md-sys-color-surface)
+  );
+  /* Today's column gets a soft primary tint like the mock */
+  --fc-today-bg-color: color-mix(
+    in srgb,
+    var(--md-sys-color-primary) 5%,
+    var(--md-sys-color-surface)
+  );
   --fc-now-indicator-color: var(--md-sys-color-error);
   --fc-page-bg-color: var(--md-sys-color-surface);
   font-family: inherit;
@@ -149,30 +159,44 @@
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
   cursor: pointer;
-  /* Events are anchors; keep the dark text of the mock, not link blue */
-  color: var(--md-sys-color-on-surface);
+  /* Events are anchors; keep the white event text, not link blue */
+  color: #fff;
 }
 
-/* Event content like the mock: bold title, time range and location below */
+/* Event content like the mock: stacked lines — bold title, then time,
+   then location/project, then a links pill. */
 .wj-event {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.0625rem;
+  overflow: hidden;
+  line-height: 1.3;
+  height: 100%;
+}
+
+/* All-day bars stay a single compact line */
+.wj-event--allday {
+  flex-direction: row;
   align-items: baseline;
   column-gap: 0.375rem;
-  overflow: hidden;
-  line-height: 1.25;
-  height: 100%;
 }
 
 .wj-event-title {
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .wj-event-meta {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
+  opacity: 0.95;
 }
 
 .wj-event-project-icon {
@@ -182,37 +206,29 @@
   vertical-align: middle;
 }
 
-/* Links fill the remaining height of the block; taller events show more,
-   shorter events clip them. */
-.wj-event-links {
-  flex-basis: 100%;
-  margin-top: 0.15rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-height: 0;
-  overflow: hidden;
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.wj-event-link {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
+/* Compact chip showing how many links the entry carries; the details stay
+   in the dialog. Clipped away on blocks too short to fit it. */
+.wj-event-pill {
+  width: fit-content;
+  margin-top: 0.125rem;
+  padding: 0 0.4375rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+  color: #1f1f1f;
+  font-size: 0.6875rem;
+  line-height: 1.5;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.wj-event-link-icon {
-  font-size: 0.75rem;
-  width: 0.75rem;
-  height: 0.75rem;
   flex-shrink: 0;
 }
 
+/* Denser hour grid like the mock (30-minute slots at 1.5rem = 48px/hour) */
 .fc .fc-timegrid-slot {
-  height: 2.5rem;
+  height: 1.5rem;
+}
+
+/* Only clean hour lines; no dotted half-hour lines */
+.fc .fc-timegrid-slot-minor {
+  border-top: none;
 }
 
 .fc .fc-highlight {
