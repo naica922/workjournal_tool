@@ -45,6 +45,50 @@ export async function sendVerificationCodeEmail({
   });
 }
 
+// Where bug reports are forwarded; defaults to the sender inbox.
+function feedbackAddress(): string {
+  return process.env.FEEDBACK_EMAIL || senderAddress();
+}
+
+export function mailConfigured(): boolean {
+  return !!process.env.SMTP_HOST;
+}
+
+export async function sendBugReportEmail({
+  firstName,
+  lastName,
+  reporterEmail,
+  description,
+  deviceType,
+  formFactor,
+  page,
+}: {
+  firstName: string;
+  lastName: string;
+  reporterEmail: string;
+  description: string;
+  deviceType?: string | null;
+  formFactor?: string | null;
+  page?: string | null;
+}) {
+  await transporter.sendMail({
+    from: { name: "Workjournal Bug report", address: senderAddress() },
+    to: feedbackAddress(),
+    replyTo: reporterEmail,
+    subject: `Bug report from ${firstName} ${lastName}`,
+    text: [
+      `A new bug report was submitted.`,
+      ``,
+      `From: ${firstName} ${lastName} <${reporterEmail}>`,
+      `Device: ${deviceType || "—"} (${formFactor || "—"})`,
+      `Page: ${page || "—"}`,
+      ``,
+      `Description:`,
+      description,
+    ].join("\n"),
+  });
+}
+
 export async function sendHostInviteEmail({
   to,
   apprenticeName,

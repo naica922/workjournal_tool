@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/db";
 import { bugReport } from "@/db/schema";
+import { mailConfigured, sendBugReportEmail } from "@/lib/mail";
 
 // Screenshots are stored inline as base64 data URLs; cap the size so a
 // report cannot bloat the database.
@@ -59,6 +60,24 @@ export async function submitBugReport(
   } catch (error) {
     console.error("Failed to save bug report", error);
     return { ok: false, error: "Could not submit the report. Please retry." };
+  }
+
+  // Also forward the report by email so it is noticed; a mail failure must
+  // not fail the submission (the report is already stored).
+  if (mailConfigured()) {
+    try {
+      await sendBugReportEmail({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        reporterEmail: data.email,
+        description: data.description,
+        deviceType: data.deviceType,
+        formFactor: data.formFactor,
+        page: data.page,
+      });
+    } catch (error) {
+      console.error("Failed to email bug report", error);
+    }
   }
 
   return { ok: true };
