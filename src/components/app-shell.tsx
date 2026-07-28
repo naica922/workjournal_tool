@@ -10,6 +10,7 @@ export function AppShell({
   active,
   role = "apprentice",
   userName = "",
+  railExtra,
   children,
 }: {
   active:
@@ -21,6 +22,7 @@ export function AppShell({
     | "settings";
   role?: "apprentice" | "host";
   userName?: string;
+  railExtra?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const isHost = role === "host";
@@ -95,6 +97,7 @@ export function AppShell({
             <md-icon>settings</md-icon>
             Settings
           </Link>
+          {railExtra}
           <div className={styles.railSpacer} />
           <Link href="/report-bug" className={styles.railLinkMuted}>
             <md-icon>bug_report</md-icon>
