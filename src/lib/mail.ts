@@ -11,6 +11,16 @@ const transporter = nodemailer.createTransport({
     : undefined,
 });
 
+const DEFAULT_FROM = "Workjournal Tool <noreply@localhost>";
+
+// The bare sender address from MAIL_FROM (e.g. "noreply@gmail.com"), used
+// when we want to keep the authorized address but change the display name.
+function senderAddress(): string {
+  const raw = process.env.MAIL_FROM ?? DEFAULT_FROM;
+  const match = raw.match(/<([^>]+)>/);
+  return (match ? match[1] : raw).trim();
+}
+
 export async function sendVerificationCodeEmail({
   to,
   otp,
@@ -19,7 +29,7 @@ export async function sendVerificationCodeEmail({
   otp: string;
 }) {
   await transporter.sendMail({
-    from: process.env.MAIL_FROM ?? "Workjournal Tool <noreply@localhost>",
+    from: process.env.MAIL_FROM ?? DEFAULT_FROM,
     to,
     subject: `${otp} is your verification code`,
     text: [
@@ -47,7 +57,10 @@ export async function sendHostInviteEmail({
   const appUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
   await transporter.sendMail({
-    from: process.env.MAIL_FROM ?? "Workjournal Tool <noreply@localhost>",
+    // The address must stay the authorized sender, but the display name
+    // shows the apprentice and replies go to their real email.
+    from: { name: `${apprenticeName} via Workjournal`, address: senderAddress() },
+    replyTo: apprenticeEmail,
     to,
     subject: `${apprenticeName} added you as their host`,
     text: [
