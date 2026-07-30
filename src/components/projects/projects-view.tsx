@@ -8,9 +8,58 @@ import {
   projectOverview,
   setProjectCompleted,
 } from "@/server/projects";
+import { listTodosForProject, setTodoDone } from "@/server/todos";
 import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, PROJECT_ICONS } from "@/lib/blocks";
 import { formatMinutes, type ProjectOverview } from "@/lib/project-stats";
 import styles from "./projects-view.module.css";
+
+// The to-dos linked to a project, checkable straight from the project card.
+function ProjectTodos({ projectId }: { projectId: string }) {
+  const queryClient = useQueryClient();
+  const { data: todos } = useQuery({
+    queryKey: ["project-todos", projectId],
+    queryFn: () => listTodosForProject(projectId),
+  });
+  const toggle = useMutation({
+    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
+      setTodoDone(id, done),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-todos", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
+  });
+
+  if (!todos || todos.length === 0) return null;
+
+  return (
+    <>
+      <h3 className={`${styles.sectionTitle} body-small`}>
+        To-dos ({todos.filter((t) => !t.done).length} open)
+      </h3>
+      <ul className={styles.todoList}>
+        {todos.map((t) => (
+          <li key={t.id} className={styles.todoItem}>
+            <md-checkbox
+              checked={t.done}
+              aria-label={t.done ? "Mark as not done" : "Mark as done"}
+              onInput={(e: React.FormEvent) =>
+                toggle.mutate({
+                  id: t.id,
+                  done: (e.target as HTMLInputElement).checked,
+                })
+              }
+            />
+            <span
+              className={`${t.done ? styles.todoDone : ""} body-medium`}
+            >
+              {t.title}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
@@ -140,6 +189,8 @@ function ProjectCard({
               </ul>
             </>
           )}
+
+          {!readOnly && <ProjectTodos projectId={project.id} />}
 
           {!readOnly && (
             <div className={styles.cardActions}>
