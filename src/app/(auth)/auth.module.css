@@ -25,6 +25,58 @@
   margin: 0 auto 0.25rem;
 }
 
+/* Round tinted icon badge above a form title, like the bug-report mock */
+.iconCircle {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  margin: 0 auto 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.fieldLabel {
+  margin: 0 0 0.5rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Dashed file drop area: upload icon over a "Choose a file …" prompt */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.5rem;
+  border: 1px dashed var(--md-sys-color-outline);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  text-align: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dropzoneActive {
+  composes: dropzone;
+  background: var(--md-sys-color-surface-container-high);
+  border-color: var(--md-sys-color-primary);
+}
+
+.dropzone:hover {
+  background: var(--md-sys-color-surface-container-high);
+  border-color: var(--md-sys-color-primary);
+}
+
+.dropzoneIcon {
+  color: var(--md-sys-color-primary);
+}
+
+.dropzoneLink {
+  color: var(--md-sys-color-primary);
+  font-weight: 500;
+}
+
 .title {
   margin: 0;
   text-align: center;
