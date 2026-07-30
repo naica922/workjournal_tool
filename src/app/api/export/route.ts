@@ -15,10 +15,6 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const months = Math.min(
-    24,
-    Math.max(1, Number(url.searchParams.get("months") ?? 6)),
-  );
   const apprenticeId = url.searchParams.get("apprenticeId") ?? session.user.id;
 
   // A host may export a calendar only for an apprentice that granted access.
@@ -35,9 +31,36 @@ export async function GET(request: Request) {
     }
   }
 
-  const to = new Date();
-  const from = new Date();
-  from.setMonth(from.getMonth() - months);
+  // The period may be given as an explicit from/to range (used by the Export
+  // tab, including its custom option) or as a number of months (used by the
+  // host's quick-export links). from/to wins when both are valid.
+  const parseDate = (value: string | null) => {
+    if (!value) return null;
+    const d = new Date(`${value}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const fromParam = parseDate(url.searchParams.get("from"));
+  const toParam = parseDate(url.searchParams.get("to"));
+
+  let from: Date;
+  let to: Date;
+  let rangeLabel: string;
+  if (fromParam && toParam && fromParam <= toParam) {
+    from = fromParam;
+    // Include the whole end day.
+    to = new Date(toParam);
+    to.setHours(23, 59, 59, 999);
+    rangeLabel = `${url.searchParams.get("from")}_${url.searchParams.get("to")}`;
+  } else {
+    const months = Math.min(
+      24,
+      Math.max(1, Number(url.searchParams.get("months") ?? 6)),
+    );
+    to = new Date();
+    from = new Date();
+    from.setMonth(from.getMonth() - months);
+    rangeLabel = `${months}m`;
+  }
 
   const [owner, projects, blocks] = await Promise.all([
     db.query.user.findFirst({ where: eq(user.id, apprenticeId) }),
@@ -55,7 +78,7 @@ export async function GET(request: Request) {
   return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="workjournal-${safeName}-${months}m.pdf"`,
+      "Content-Disposition": `attachment; filename="workjournal-${safeName}-${rangeLabel}.pdf"`,
     },
   });
 }

@@ -3,16 +3,46 @@
 import { useState } from "react";
 import styles from "./export-view.module.css";
 
-const PERIODS = [
-  { months: 1, label: "Last month" },
-  { months: 3, label: "Last 3 months" },
-  { months: 6, label: "Last 6 months" },
-  { months: 12, label: "Last 12 months" },
+type PeriodKey = "week" | "6m" | "12m" | "custom";
+
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: "week", label: "Last week" },
+  { key: "6m", label: "Last 6 months" },
+  { key: "12m", label: "Last 12 months" },
+  { key: "custom", label: "Custom" },
 ];
 
+function isoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// The from/to range for a preset, ending today.
+function presetRange(key: PeriodKey): { from: string; to: string } {
+  const to = new Date();
+  const from = new Date();
+  if (key === "week") from.setDate(from.getDate() - 7);
+  else if (key === "6m") from.setMonth(from.getMonth() - 6);
+  else from.setMonth(from.getMonth() - 12);
+  return { from: isoDate(from), to: isoDate(to) };
+}
+
 export function ExportView() {
-  const [months, setMonths] = useState(6);
-  const href = `/api/export?months=${months}`;
+  const [period, setPeriod] = useState<PeriodKey>("6m");
+  const today = isoDate(new Date());
+  const [customFrom, setCustomFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return isoDate(d);
+  });
+  const [customTo, setCustomTo] = useState(today);
+
+  const range =
+    period === "custom"
+      ? { from: customFrom, to: customTo }
+      : presetRange(period);
+  const customInvalid = period === "custom" && customFrom > customTo;
+  const href = `/api/export?from=${range.from}&to=${range.to}`;
 
   return (
     <div className={styles.page}>
@@ -44,24 +74,63 @@ export function ExportView() {
         <div className={styles.periodRow} role="radiogroup" aria-label="Period">
           {PERIODS.map((p) => (
             <button
-              key={p.months}
+              key={p.key}
               type="button"
               role="radio"
-              aria-checked={months === p.months}
+              aria-checked={period === p.key}
               className={
-                months === p.months
+                period === p.key
                   ? styles.periodButtonSelected
                   : styles.periodButton
               }
-              onClick={() => setMonths(p.months)}
+              onClick={() => setPeriod(p.key)}
             >
               {p.label}
             </button>
           ))}
         </div>
 
+        {period === "custom" && (
+          <div className={styles.customRow}>
+            <label className={`${styles.dateField} body-small`}>
+              Start date
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+            </label>
+            <label className={`${styles.dateField} body-small`}>
+              End date
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom}
+                max={today}
+                onChange={(e) => setCustomTo(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
+
+        {customInvalid && (
+          <p className={`${styles.error} body-small`}>
+            The start date must be before the end date.
+          </p>
+        )}
+
         <div className={styles.downloadRow}>
-          <a href={href} download className={styles.downloadButton}>
+          <a
+            href={customInvalid ? undefined : href}
+            download
+            aria-disabled={customInvalid}
+            className={
+              customInvalid
+                ? `${styles.downloadButton} ${styles.downloadButtonDisabled}`
+                : styles.downloadButton
+            }
+          >
             <md-icon>download</md-icon>
             Download PDF
           </a>
