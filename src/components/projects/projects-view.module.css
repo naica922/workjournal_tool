@@ -271,3 +271,24 @@
   color: var(--md-sys-color-error);
   margin: 0;
 }
+
+/* Project-linked to-dos, checkable from the project card */
+.todoList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.todoItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.todoDone {
+  text-decoration: line-through;
+  color: var(--md-sys-color-on-surface-variant);
+}

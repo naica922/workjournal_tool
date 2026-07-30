@@ -1,17 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { MdDialog } from "@material/web/dialog/dialog";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   createTodo,
+  createTodoList,
   deleteTodo,
+  deleteTodoList,
+  listTodoLists,
   listTodos,
+  moveTodo,
+  renameTodoList,
   setTodoDone,
   updateTodo,
 } from "@/server/todos";
 import { listProjects } from "@/server/projects";
-import type { Project, Todo } from "@/db/schema";
+import type { Project, Todo, TodoList } from "@/db/schema";
+import { EditTodoDialog } from "./edit-todo-dialog";
 import styles from "./todos-view.module.css";
 
 const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
@@ -22,114 +47,61 @@ const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-function toLocalInput(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+// One draggable open task.
+function TaskItem({
+  todo,
+  project,
+  now,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  todo: Todo;
+  project: Project | null;
+  now: number;
+  onToggle: (done: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: todo.id });
+  const deadline = todo.deadline ? new Date(todo.deadline) : null;
+  const overdue = deadline && !todo.done && deadline.getTime() < now;
 
-export function TodosView() {
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Todo | null>(null);
-
-  const { data: todos } = useQuery({
-    queryKey: ["todos"],
-    queryFn: () => listTodos(),
-  });
-  const { data: projects } = useQuery({
-    queryKey: ["projects", "me"],
-    queryFn: () => listProjects(),
-  });
-
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["todos"] });
-
-  const createMutation = useMutation({
-    mutationFn: createTodo,
-    onSuccess: () => {
-      invalidate();
-      setError(null);
-    },
-    onError: (e: Error) => setError(e.message),
-  });
-  const doneMutation = useMutation({
-    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
-      setTodoDone(id, done),
-    onSuccess: invalidate,
-  });
-  const deleteMutation = useMutation({
-    mutationFn: deleteTodo,
-    onSuccess: invalidate,
-  });
-  const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: unknown }) =>
-      updateTodo(id, input),
-    onSuccess: () => {
-      invalidate();
-      setEditing(null);
-    },
-    onError: (e: Error) => setError(e.message),
-  });
-
-  const projectFor = (id: string | null) =>
-    id ? (projects?.find((p) => p.id === id) ?? null) : null;
-
-  function handleCreate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const deadlineRaw = String(data.get("deadline") ?? "");
-    createMutation.mutate({
-      title: String(data.get("title") ?? ""),
-      description: String(data.get("description") ?? "") || undefined,
-      deadline: deadlineRaw ? new Date(deadlineRaw).toISOString() : null,
-      projectId: String(data.get("projectId") ?? "") || null,
-    });
-    form.reset();
-  }
-
-  const open = (todos ?? []).filter((t) => !t.done);
-  const done = (todos ?? []).filter((t) => t.done);
-
-  function renderTodo(t: Todo) {
-    const deadline = t.deadline ? new Date(t.deadline) : null;
-    const overdue = deadline && !t.done && deadline.getTime() < Date.now();
-    const project = projectFor(t.projectId);
-    return (
-      <li key={t.id} className={styles.item}>
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      className={styles.task}
+    >
+      {/* Drag anywhere on the body; the checkbox/buttons stop propagation. */}
+      <div className={styles.taskDrag} {...attributes} {...listeners}>
         <md-checkbox
-          checked={t.done}
-          aria-label={t.done ? "Mark as not done" : "Mark as done"}
+          checked={todo.done}
+          aria-label={todo.done ? "Mark as not done" : "Mark as done"}
+          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
           onInput={(e: React.FormEvent) =>
-            doneMutation.mutate({
-              id: t.id,
-              done: (e.target as HTMLInputElement).checked,
-            })
+            onToggle((e.target as HTMLInputElement).checked)
           }
         />
-        <div className={styles.itemBody}>
+        <div className={styles.taskBody} onClick={onEdit}>
           <p
-            className={`${t.done ? styles.itemTitleDone : styles.itemTitle} body-medium`}
+            className={`${todo.done ? styles.taskTitleDone : styles.taskTitle} body-medium`}
           >
-            {t.title}
+            {todo.title}
           </p>
-          {t.description && (
-            <p className={`${styles.empty} body-small`}>{t.description}</p>
+          {todo.description && (
+            <p className={`${styles.taskNote} body-small`}>{todo.description}</p>
           )}
-          {(deadline || t.projectId) && (
-            <p className={`${styles.itemMeta} body-small`}>
+          {(deadline || project) && (
+            <p className={`${styles.taskMeta} body-small`}>
               {deadline && (
-                <span className={overdue ? styles.deadlineOverdue : undefined}>
-                  <md-icon
-                    style={{
-                      fontSize: "1rem",
-                      width: "1rem",
-                      height: "1rem",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    schedule
-                  </md-icon>{" "}
+                <span className={overdue ? styles.overdue : undefined}>
+                  <md-icon class={styles.metaIcon}>schedule</md-icon>
                   {dateTimeFmt.format(deadline)}
                 </span>
               )}
@@ -153,212 +125,427 @@ export function TodosView() {
         </div>
         <md-icon-button
           type="button"
-          aria-label="Edit to-do"
-          onClick={() => {
-            setError(null);
-            setEditing(t);
-          }}
-        >
-          <md-icon>edit</md-icon>
-        </md-icon-button>
-        <md-icon-button
-          type="button"
           aria-label="Delete to-do"
-          onClick={() => deleteMutation.mutate(t.id)}
+          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+          onClick={onDelete}
         >
           <md-icon>delete</md-icon>
         </md-icon-button>
-      </li>
-    );
+      </div>
+    </li>
+  );
+}
+
+function AddTaskField({ onAdd }: { onAdd: (title: string) => void }) {
+  const [value, setValue] = useState("");
+  const submit = () => {
+    const t = value.trim();
+    if (!t) return;
+    onAdd(t);
+    setValue("");
+  };
+  return (
+    <div className={styles.addTask}>
+      <md-icon class={styles.addTaskIcon}>add</md-icon>
+      <input
+        className={styles.addTaskInput}
+        placeholder="Add a task"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submit();
+          }
+        }}
+        onBlur={submit}
+      />
+    </div>
+  );
+}
+
+function ListColumn({
+  list,
+  openTodos,
+  doneTodos,
+  projectFor,
+  now,
+  onRename,
+  onDeleteList,
+  onAddTask,
+  onToggle,
+  onEditTask,
+  onDeleteTask,
+}: {
+  list: TodoList;
+  openTodos: Todo[];
+  doneTodos: Todo[];
+  projectFor: (id: string | null) => Project | null;
+  now: number;
+  onRename: (title: string) => void;
+  onDeleteList: () => void;
+  onAddTask: (title: string) => void;
+  onToggle: (todo: Todo, done: boolean) => void;
+  onEditTask: (todo: Todo) => void;
+  onDeleteTask: (id: string) => void;
+}) {
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [title, setTitle] = useState(list.title);
+  const [showDone, setShowDone] = useState(false);
+
+  return (
+    <section className={styles.column} aria-label={list.title}>
+      <header className={styles.columnHead}>
+        {editingTitle ? (
+          <input
+            className={styles.titleInput}
+            value={title}
+            autoFocus
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => {
+              setEditingTitle(false);
+              if (title.trim() && title.trim() !== list.title)
+                onRename(title.trim());
+              else setTitle(list.title);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Escape") {
+                setTitle(list.title);
+                setEditingTitle(false);
+              }
+            }}
+          />
+        ) : (
+          <h2
+            className={`${styles.columnTitle} title-medium`}
+            onClick={() => {
+              // Start editing from the current title (no sync effect needed).
+              setTitle(list.title);
+              setEditingTitle(true);
+            }}
+            title="Rename list"
+          >
+            {list.title}
+          </h2>
+        )}
+        <md-icon-button
+          type="button"
+          aria-label="Delete list"
+          onClick={onDeleteList}
+        >
+          <md-icon>delete</md-icon>
+        </md-icon-button>
+      </header>
+
+      <AddTaskField onAdd={onAddTask} />
+
+      <SortableContext
+        items={openTodos.map((t) => t.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <ul className={styles.taskList} data-list={list.id}>
+          {openTodos.map((t) => (
+            <TaskItem
+              key={t.id}
+              todo={t}
+              project={projectFor(t.projectId)}
+              now={now}
+              onToggle={(done) => onToggle(t, done)}
+              onEdit={() => onEditTask(t)}
+              onDelete={() => onDeleteTask(t.id)}
+            />
+          ))}
+          {openTodos.length === 0 && (
+            <li className={`${styles.emptyHint} body-small`}>No tasks yet.</li>
+          )}
+        </ul>
+      </SortableContext>
+
+      {doneTodos.length > 0 && (
+        <div className={styles.doneSection}>
+          <button
+            type="button"
+            className={styles.doneToggle}
+            aria-expanded={showDone}
+            onClick={() => setShowDone((v) => !v)}
+          >
+            <md-icon>{showDone ? "expand_more" : "chevron_right"}</md-icon>
+            Completed ({doneTodos.length})
+          </button>
+          {showDone && (
+            <ul className={styles.taskList}>
+              {doneTodos.map((t) => (
+                <li key={t.id} className={styles.doneTask}>
+                  <md-checkbox
+                    checked
+                    aria-label="Mark as not done"
+                    onInput={() => onToggle(t, false)}
+                  />
+                  <span
+                    className={`${styles.taskTitleDone} body-medium`}
+                    onClick={() => onEditTask(t)}
+                  >
+                    {t.title}
+                  </span>
+                  <md-icon-button
+                    type="button"
+                    aria-label="Delete to-do"
+                    onClick={() => onDeleteTask(t.id)}
+                  >
+                    <md-icon>delete</md-icon>
+                  </md-icon-button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function TodosView() {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState<Todo | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // A single "now" for overdue checks, kept out of child render (pure).
+  const [now] = useState(() => Date.now());
+  // Local ordering mirror while dragging so moves feel instant.
+  const [orderByList, setOrderByList] = useState<Record<string, string[]>>({});
+  const dragging = useRef(false);
+
+  const { data: lists } = useQuery({
+    queryKey: ["todo-lists"],
+    queryFn: () => listTodoLists(),
+  });
+  const { data: todos } = useQuery({
+    queryKey: ["todos"],
+    queryFn: () => listTodos(),
+  });
+  const { data: projects } = useQuery({
+    queryKey: ["projects", "me"],
+    queryFn: () => listProjects(),
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["todos"] });
+    queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+  };
+
+  const todoMap = useMemo(
+    () => new Map((todos ?? []).map((t) => [t.id, t])),
+    [todos],
+  );
+  const projectFor = (id: string | null) =>
+    id ? (projects?.find((p) => p.id === id) ?? null) : null;
+
+  // Rebuild the open-task ordering from server data when not mid-drag.
+  useEffect(() => {
+    if (dragging.current) return;
+    const next: Record<string, string[]> = {};
+    for (const l of lists ?? []) next[l.id] = [];
+    for (const t of todos ?? []) {
+      if (t.done || !t.listId) continue;
+      (next[t.listId] ??= []).push(t.id);
+    }
+    setOrderByList(next);
+  }, [lists, todos]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const listForItem = (id: string): string | null => {
+    if (orderByList[id]) return id; // dropped on an (empty) column
+    for (const [listId, ids] of Object.entries(orderByList)) {
+      if (ids.includes(id)) return listId;
+    }
+    return null;
+  };
+
+  const createListMut = useMutation({
+    mutationFn: (title: string) => createTodoList(title),
+    onSuccess: invalidate,
+  });
+  const renameListMut = useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      renameTodoList(id, title),
+    onSuccess: invalidate,
+  });
+  const deleteListMut = useMutation({
+    mutationFn: (id: string) => deleteTodoList(id),
+    onSuccess: invalidate,
+  });
+  const createTodoMut = useMutation({
+    mutationFn: (input: { listId: string; title: string }) => createTodo(input),
+    onSuccess: invalidate,
+  });
+  const doneMut = useMutation({
+    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
+      setTodoDone(id, done),
+    onSuccess: invalidate,
+  });
+  const deleteTodoMut = useMutation({
+    mutationFn: (id: string) => deleteTodo(id),
+    onSuccess: invalidate,
+  });
+  const updateMut = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: unknown }) =>
+      updateTodo(id, input),
+    onSuccess: () => {
+      invalidate();
+      setEditing(null);
+    },
+  });
+  const moveMut = useMutation({
+    mutationFn: (input: { id: string; listId: string; index: number }) =>
+      moveTodo(input),
+    onSuccess: invalidate,
+  });
+
+  function handleDragStart(event: DragStartEvent) {
+    dragging.current = true;
+    setActiveId(String(event.active.id));
   }
+
+  function handleDragOver(event: DragOverEvent) {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    if (!overId) return;
+    const from = listForItem(activeId);
+    const to = listForItem(overId);
+    if (!from || !to || from === to) return;
+
+    setOrderByList((prev) => {
+      const fromIds = prev[from].filter((id) => id !== activeId);
+      const toIds = [...prev[to]];
+      const overIndex = toIds.indexOf(overId);
+      const insertAt = overIndex >= 0 ? overIndex : toIds.length;
+      toIds.splice(insertAt, 0, activeId);
+      return { ...prev, [from]: fromIds, [to]: toIds };
+    });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    dragging.current = false;
+    setActiveId(null);
+    if (!overId) return;
+
+    const listId = listForItem(activeId);
+    if (!listId) return;
+
+    let ids = orderByList[listId];
+    const overIndex = ids.indexOf(overId);
+    const activeIndex = ids.indexOf(activeId);
+    if (overIndex >= 0 && activeIndex >= 0 && overIndex !== activeIndex) {
+      ids = arrayMove(ids, activeIndex, overIndex);
+      setOrderByList((prev) => ({ ...prev, [listId]: ids }));
+    }
+    const finalIndex = ids.indexOf(activeId);
+    moveMut.mutate({ id: activeId, listId, index: Math.max(0, finalIndex) });
+  }
+
+  const activeTodo = activeId ? (todoMap.get(activeId) ?? null) : null;
 
   return (
     <div className={styles.page}>
-      <h1 className={`${styles.heading} headline-small`}>To-dos</h1>
-
-      <div className={styles.columns}>
-        <div className={styles.left}>
-          <section className={styles.card}>
-            <h2 className={`${styles.cardTitle} title-medium`}>New to-do</h2>
-            <form className={styles.form} onSubmit={handleCreate}>
-          <md-outlined-text-field label="Title" name="title" required />
-          <md-outlined-text-field
-            label="Description"
-            name="description"
-            type="textarea"
-            rows={2}
-          />
-          <div className={styles.row}>
-            <label className={`${styles.dateField} body-small`}>
-              Deadline (optional)
-              <input type="datetime-local" name="deadline" />
-            </label>
-            <md-outlined-select label="Project (optional)" name="projectId">
-              <md-select-option value="">
-                <div slot="headline">No project</div>
-              </md-select-option>
-              {(projects ?? []).map((p) => (
-                <md-select-option key={p.id} value={p.id}>
-                  <div slot="headline">{p.name}</div>
-                </md-select-option>
-              ))}
-            </md-outlined-select>
-          </div>
-            {error && <p className={`${styles.error} body-medium`}>{error}</p>}
-            <div className={styles.actions}>
-              <md-filled-button
-                type="submit"
-                disabled={createMutation.isPending}
-              >
-                Add to-do
-              </md-filled-button>
-            </div>
-            </form>
-          </section>
-        </div>
-
-        <div className={styles.right}>
-          <section className={styles.card}>
-            <h2 className={`${styles.cardTitle} title-medium`}>Open</h2>
-            <ul className={styles.list}>
-              {open.map(renderTodo)}
-              {open.length === 0 && (
-                <li className={`${styles.empty} body-medium`}>
-                  Nothing to do. Add a to-do on the left.
-                </li>
-              )}
-            </ul>
-          </section>
-
-          {done.length > 0 && (
-            <section className={styles.card}>
-              <h2 className={`${styles.cardTitle} title-medium`}>Done</h2>
-              <ul className={styles.list}>{done.map(renderTodo)}</ul>
-            </section>
-          )}
-        </div>
+      <div className={styles.header}>
+        <h1 className={`${styles.heading} headline-small`}>To-dos</h1>
+        <md-outlined-button
+          type="button"
+          onClick={() => {
+            const title = window.prompt("Name of the new list");
+            if (title && title.trim()) createListMut.mutate(title.trim());
+          }}
+        >
+          <md-icon slot="icon">add</md-icon>
+          New list
+        </md-outlined-button>
       </div>
+
+      {(lists ?? []).length === 0 ? (
+        <p className={`${styles.emptyBoard} body-medium`}>
+          You have no lists yet. Create your first list to start adding tasks.
+        </p>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className={styles.board}>
+            {(lists ?? []).map((list) => {
+              const orderedIds = orderByList[list.id] ?? [];
+              const openTodos = orderedIds
+                .map((id) => todoMap.get(id))
+                .filter((t): t is Todo => !!t);
+              const doneTodos = (todos ?? []).filter(
+                (t) => t.listId === list.id && t.done,
+              );
+              return (
+                <ListColumn
+                  key={list.id}
+                  list={list}
+                  openTodos={openTodos}
+                  doneTodos={doneTodos}
+                  projectFor={projectFor}
+                  now={now}
+                  onRename={(title) =>
+                    renameListMut.mutate({ id: list.id, title })
+                  }
+                  onDeleteList={() => {
+                    if (
+                      window.confirm(
+                        `Delete the list "${list.title}" and its tasks?`,
+                      )
+                    )
+                      deleteListMut.mutate(list.id);
+                  }}
+                  onAddTask={(title) =>
+                    createTodoMut.mutate({ listId: list.id, title })
+                  }
+                  onToggle={(t, done) => doneMut.mutate({ id: t.id, done })}
+                  onEditTask={(t) => setEditing(t)}
+                  onDeleteTask={(id) => deleteTodoMut.mutate(id)}
+                />
+              );
+            })}
+          </div>
+          <DragOverlay>
+            {activeTodo && (
+              <div className={`${styles.task} ${styles.taskOverlay}`}>
+                <div className={styles.taskDrag}>
+                  <md-checkbox checked={activeTodo.done} />
+                  <div className={styles.taskBody}>
+                    <p className={`${styles.taskTitle} body-medium`}>
+                      {activeTodo.title}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       {editing && (
         <EditTodoDialog
           key={editing.id}
           todo={editing}
           projects={projects ?? []}
-          pending={updateMutation.isPending}
-          error={error}
+          pending={updateMut.isPending}
           onClose={() => setEditing(null)}
-          onSave={(input) => updateMutation.mutate({ id: editing.id, input })}
+          onSave={(input) => updateMut.mutate({ id: editing.id, input })}
         />
       )}
     </div>
-  );
-}
-
-function EditTodoDialog({
-  todo,
-  projects,
-  pending,
-  error,
-  onClose,
-  onSave,
-}: {
-  todo: Todo;
-  projects: Project[];
-  pending: boolean;
-  error: string | null;
-  onClose: () => void;
-  onSave: (input: {
-    title: string;
-    description?: string;
-    deadline: string | null;
-    projectId: string | null;
-  }) => void;
-}) {
-  const dialogRef = useRef<MdDialog | null>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    dialog.show();
-    const handleClosed = () => onClose();
-    dialog.addEventListener("closed", handleClosed);
-    return () => dialog.removeEventListener("closed", handleClosed);
-  }, [onClose]);
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const deadlineRaw = String(data.get("deadline") ?? "");
-    onSave({
-      title: String(data.get("title") ?? ""),
-      description: String(data.get("description") ?? "") || undefined,
-      deadline: deadlineRaw ? new Date(deadlineRaw).toISOString() : null,
-      projectId: String(data.get("projectId") ?? "") || null,
-    });
-  }
-
-  return (
-    <md-dialog ref={dialogRef}>
-      <div slot="headline">Edit to-do</div>
-      <form
-        id="edit-todo-form"
-        slot="content"
-        className={styles.form}
-        onSubmit={handleSubmit}
-      >
-        <md-outlined-text-field
-          label="Title"
-          name="title"
-          required
-          value={todo.title}
-        />
-        <md-outlined-text-field
-          label="Description"
-          name="description"
-          type="textarea"
-          rows={2}
-          value={todo.description ?? ""}
-        />
-        <label className={`${styles.dateField} body-small`}>
-          Deadline (optional)
-          <input
-            type="datetime-local"
-            name="deadline"
-            defaultValue={todo.deadline ? toLocalInput(new Date(todo.deadline)) : ""}
-          />
-        </label>
-        <md-outlined-select
-          label="Project (optional)"
-          name="projectId"
-          value={todo.projectId ?? ""}
-        >
-          <md-select-option value="">
-            <div slot="headline">No project</div>
-          </md-select-option>
-          {projects.map((p) => (
-            <md-select-option key={p.id} value={p.id}>
-              <div slot="headline">{p.name}</div>
-            </md-select-option>
-          ))}
-        </md-outlined-select>
-        {error && <p className={`${styles.error} body-medium`}>{error}</p>}
-      </form>
-      <div slot="actions">
-        <md-text-button type="button" onClick={() => dialogRef.current?.close()}>
-          Cancel
-        </md-text-button>
-        <md-filled-button
-          type="button"
-          disabled={pending}
-          onClick={() =>
-            (
-              document.getElementById("edit-todo-form") as HTMLFormElement | null
-            )?.requestSubmit()
-          }
-        >
-          {pending ? "Saving..." : "Save"}
-        </md-filled-button>
-      </div>
-    </md-dialog>
   );
 }

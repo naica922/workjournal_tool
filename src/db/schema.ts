@@ -175,11 +175,28 @@ export const calendarBlock = pgTable("calendar_block", {
 // a project. Separate from calendar entries.
 // ---------------------------------------------------------------------------
 
+// A named to-do list (like a Google Tasks list). Tasks belong to one list.
+export const todoList = pgTable("todo_list", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  // Order of the list on the board.
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const todo = pgTable("todo", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  // The list this task lives in; a task is removed when its list is deleted.
+  listId: uuid("list_id").references(() => todoList.id, {
+    onDelete: "cascade",
+  }),
   title: text("title").notNull(),
   description: text("description"),
   deadline: timestamp("deadline", { withTimezone: true }),
@@ -187,6 +204,8 @@ export const todo = pgTable("todo", {
     onDelete: "set null",
   }),
   done: boolean("done").notNull().default(false),
+  // Order of the task within its list (open and done ordered separately).
+  position: integer("position").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -212,5 +231,6 @@ export type User = typeof user.$inferSelect;
 export type HostAssignment = typeof hostAssignment.$inferSelect;
 export type Project = typeof project.$inferSelect;
 export type Todo = typeof todo.$inferSelect;
+export type TodoList = typeof todoList.$inferSelect;
 export type CalendarBlock = typeof calendarBlock.$inferSelect;
 export type NewCalendarBlock = typeof calendarBlock.$inferInsert;

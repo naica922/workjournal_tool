@@ -18,12 +18,12 @@ export function textField(page: Page, name: string) {
 async function fetchOtp(page: Page, email: string): Promise<string> {
   for (let attempt = 0; attempt < 20; attempt++) {
     const search = await page.request.get(
-      `http://localhost:8025/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+      `http://127.0.0.1:8025/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
     );
     const { messages } = await search.json();
     if (messages?.length) {
       const detail = await page.request.get(
-        `http://localhost:8025/api/v1/message/${messages[0].ID}`,
+        `http://127.0.0.1:8025/api/v1/message/${messages[0].ID}`,
       );
       const { Text } = await detail.json();
       const match = Text.match(/\b(\d{6})\b/);
