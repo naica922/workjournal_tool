@@ -63,8 +63,40 @@
   border-color: transparent;
 }
 
+.customRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dateField input {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 0.25rem;
+  padding: 0.7rem 0.75rem;
+  font: inherit;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface);
+}
+
+.error {
+  margin: 0;
+  color: var(--md-sys-color-error);
+}
+
 .downloadRow {
   margin-top: 0.5rem;
+}
+
+.downloadButtonDisabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .downloadButton {
