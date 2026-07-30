@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { submitBugReport } from "@/server/bug-report";
 import styles from "@/app/(auth)/auth.module.css";
@@ -26,6 +26,19 @@ export function BugReportForm({
 }) {
   const [formFactor, setFormFactor] = useState<"mobile" | "laptop">("laptop");
   const [error, setError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  function handleDrop(event: React.DragEvent) {
+    event.preventDefault();
+    setDragActive(false);
+    const files = event.dataTransfer.files;
+    if (files.length && fileRef.current) {
+      fileRef.current.files = files;
+      setFileName(files[0].name);
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: submitBugReport,
@@ -90,6 +103,9 @@ export function BugReportForm({
         style={{ maxWidth: "34rem" }}
         aria-labelledby="bug-title"
       >
+        <div className={styles.iconCircle} aria-hidden="true">
+          <md-icon>bug_report</md-icon>
+        </div>
         <h1 id="bug-title" className={`${styles.title} headline-small`}>
           Report a bug
         </h1>
@@ -177,18 +193,51 @@ export function BugReportForm({
             supporting-text="e.g. Calendar, Projects, Settings"
           />
 
-          <label className="body-medium">
-            Screenshot (optional)
-            <input
-              type="file"
-              name="screenshot"
-              accept="image/*"
-              style={{ display: "block", marginTop: "0.5rem" }}
-            />
-          </label>
+          <div>
+            <p className={`${styles.fieldLabel} body-small`}>
+              Screenshot (optional)
+            </p>
+            <label
+              className={
+                dragActive ? styles.dropzoneActive : styles.dropzone
+              }
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={handleDrop}
+            >
+              <md-icon class={styles.dropzoneIcon}>upload</md-icon>
+              <span className="body-medium">
+                {fileName ? (
+                  fileName
+                ) : (
+                  <>
+                    <span className={styles.dropzoneLink}>Choose a file</span> or
+                    drag it here
+                  </>
+                )}
+              </span>
+              <input
+                ref={fileRef}
+                type="file"
+                name="screenshot"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) =>
+                  setFileName(e.target.files?.[0]?.name ?? null)
+                }
+              />
+            </label>
+          </div>
 
           {error && <p className={`${styles.error} body-medium`}>{error}</p>}
-          <md-filled-button type="submit" disabled={mutation.isPending}>
+          <md-filled-button
+            type="submit"
+            disabled={mutation.isPending}
+            style={{ width: "100%" }}
+          >
             {mutation.isPending ? "Submitting..." : "Submit report"}
           </md-filled-button>
         </form>
