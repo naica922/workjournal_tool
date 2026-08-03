@@ -266,7 +266,10 @@ export function CalendarView({
             ? `color-mix(in srgb, ${color} 30%, white)`
             : color,
           borderColor: "transparent",
-          classNames: isPast ? ["wj-past"] : [],
+          classNames: [
+            ...(isPast ? ["wj-past"] : []),
+            ...(isLate ? ["wj-late-event"] : []),
+          ],
           extendedProps: {
             location: occurrence.location,
             projectName: project?.name ?? null,
