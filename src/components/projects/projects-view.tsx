@@ -271,31 +271,11 @@ export function ProjectsView({
     form.reset();
   }
 
-  const exportHref = (months: number) => {
-    const params = new URLSearchParams({ months: String(months) });
-    if (ownerId) params.set("apprenticeId", ownerId);
-    return `/api/export?${params.toString()}`;
-  };
-
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <h1 className={`${styles.heading} headline-small`}>Projects</h1>
-        {/* The apprentice exports from the dedicated Export tab; a host
-            exports the apprentice they are viewing right here. */}
-        {readOnly && (
-          <div className={styles.exportGroup}>
-            <a href={exportHref(1)} download className={styles.exportLink}>
-              <md-icon>picture_as_pdf</md-icon>1 month
-            </a>
-            <a href={exportHref(3)} download className={styles.exportLink}>
-              <md-icon>picture_as_pdf</md-icon>3 months
-            </a>
-            <a href={exportHref(6)} download className={styles.exportLink}>
-              <md-icon>picture_as_pdf</md-icon>6 months
-            </a>
-          </div>
-        )}
+        {/* Exporting a journal now lives on the My apprentices list. */}
       </div>
 
       {!readOnly && (
