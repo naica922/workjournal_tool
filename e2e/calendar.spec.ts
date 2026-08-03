@@ -101,6 +101,9 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
 
   // The host can export this apprentice's journal from the list.
   await page.locator("md-text-button", { hasText: "Export" }).click();
+  await expect(
+    page.getByText("A written summary of what you worked on"),
+  ).toBeVisible();
   const exportLink = page.locator("a[download]");
   await expect(exportLink).toBeVisible();
   await expect(exportLink).toHaveAttribute(

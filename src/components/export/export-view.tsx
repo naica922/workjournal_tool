@@ -66,29 +66,23 @@ export function ExportView({
             ? `Export ${apprenticeName}'s journal`
             : "Export your journal"}
         </h2>
-        {/* The full intro + checklist only on the apprentice's own Export
-            tab; the host's embedded card stays compact. */}
-        {!apprenticeId && (
-          <>
-            <p className={`${styles.cardText} body-medium`}>
-              Download a PDF summary of your work for a chosen period. It is
-              ideal to share your progress with your host or to keep for your
-              records.
-            </p>
+        <p className={`${styles.cardText} body-medium`}>
+          {apprenticeName
+            ? `Download a PDF summary of ${apprenticeName}'s work for a chosen period — a written record you can keep or share with the school.`
+            : "Download a PDF summary of your work for a chosen period. It is ideal to share your progress with your host or to keep for your records."}
+        </p>
 
-            <ul className={styles.included}>
-              <li className={`${styles.includedItem} body-small`}>
-                <md-icon>check</md-icon> A written summary of what you worked on
-              </li>
-              <li className={`${styles.includedItem} body-small`}>
-                <md-icon>check</md-icon> Time invested per project
-              </li>
-              <li className={`${styles.includedItem} body-small`}>
-                <md-icon>check</md-icon> Blockers, solutions and links
-              </li>
-            </ul>
-          </>
-        )}
+        <ul className={styles.included}>
+          <li className={`${styles.includedItem} body-small`}>
+            <md-icon>check</md-icon> A written summary of what you worked on
+          </li>
+          <li className={`${styles.includedItem} body-small`}>
+            <md-icon>check</md-icon> Time invested per project
+          </li>
+          <li className={`${styles.includedItem} body-small`}>
+            <md-icon>check</md-icon> Blockers, solutions and links
+          </li>
+        </ul>
 
         <p className={`${styles.periodLabel} body-medium`}>Period</p>
         <div className={styles.periodRow} role="radiogroup" aria-label="Period">
