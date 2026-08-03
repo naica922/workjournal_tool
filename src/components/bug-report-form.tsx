@@ -74,6 +74,7 @@ export function BugReportForm({
       deviceType: String(data.get("deviceType") ?? "") || undefined,
       formFactor,
       page: String(data.get("page") ?? "") || undefined,
+      links: String(data.get("links") ?? "") || undefined,
       screenshot,
     });
   }
@@ -231,6 +232,15 @@ export function BugReportForm({
               />
             </label>
           </div>
+
+          <md-outlined-text-field
+            class={styles.field}
+            label="Links (optional)"
+            name="links"
+            type="textarea"
+            rows={2}
+            supporting-text="e.g. a screen recording or a related document, one per line"
+          />
 
           {error && <p className={`${styles.error} body-medium`}>{error}</p>}
           <md-filled-button

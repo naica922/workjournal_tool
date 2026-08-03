@@ -71,7 +71,7 @@ function renderEvent(arg: EventContentArg) {
   // Month cells fit one line: just the title next to the time.
   if (arg.view.type === "dayGridMonth" && !event.allDay) {
     return (
-      <div className="wj-event wj-event--allday">
+      <div className="wj-event wj-event--allday" title={event.title}>
         {lateMark}
         <span className="wj-event-title">{event.title}</span>
         <span className="wj-event-meta">
@@ -83,7 +83,10 @@ function renderEvent(arg: EventContentArg) {
   // All-day bars are a single compact line; timed blocks stack their lines
   // like the mock (title, time, location, then a links pill).
   return (
-    <div className={event.allDay ? "wj-event wj-event--allday" : "wj-event"}>
+    <div
+      className={event.allDay ? "wj-event wj-event--allday" : "wj-event"}
+      title={event.title}
+    >
       <span className="wj-event-title">
         {lateMark}
         {event.title}
@@ -175,11 +178,18 @@ export function CalendarView({
   ownerId,
   readOnly = false,
   title,
+  minDate,
+  embedded = false,
 }: {
   // Calendar owner; undefined shows the signed-in user's own calendar.
   ownerId?: string;
   readOnly?: boolean;
   title?: string;
+  // Earliest navigable/creatable day (the apprenticeship start date).
+  minDate?: string | null;
+  // Embedded below other panels (e.g. the host view): fixed height so the
+  // page scrolls instead of the calendar filling the whole viewport.
+  embedded?: boolean;
 }) {
   const queryClient = useQueryClient();
   const ownerKey = ownerId ?? "me";
@@ -504,7 +514,10 @@ export function CalendarView({
           </button>
         </div>
       )}
-      <div className={styles.wrapper}>
+      <div
+        className={styles.wrapper}
+        style={embedded ? { flex: "none", height: "40rem" } : undefined}
+      >
         {isPending && (
           <div className={styles.loading} role="status" aria-label="Loading">
             <md-circular-progress indeterminate />
@@ -514,6 +527,8 @@ export function CalendarView({
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
+          // Block navigating/creating before the apprenticeship start date.
+          validRange={minDate ? { start: minDate } : undefined}
           headerToolbar={
             isMobile
               ? false

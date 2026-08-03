@@ -21,6 +21,7 @@ const bugReportSchema = z.object({
   deviceType: z.string().trim().max(200).optional(),
   formFactor: z.enum(["mobile", "laptop"]).optional(),
   page: z.string().trim().max(200).optional(),
+  links: z.string().trim().max(2000).optional(),
   screenshot: z
     .string()
     .max(MAX_SCREENSHOT_CHARS, "The screenshot is too large (max ~2 MB)")
@@ -55,6 +56,7 @@ export async function submitBugReport(
       deviceType: data.deviceType || null,
       formFactor: data.formFactor ?? null,
       page: data.page || null,
+      links: data.links || null,
       screenshot: data.screenshot || null,
     });
   } catch (error) {
@@ -74,6 +76,7 @@ export async function submitBugReport(
         deviceType: data.deviceType,
         formFactor: data.formFactor,
         page: data.page,
+        links: data.links,
       });
     } catch (error) {
       console.error("Failed to email bug report", error);

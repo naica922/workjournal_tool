@@ -62,6 +62,7 @@ export async function sendBugReportEmail({
   deviceType,
   formFactor,
   page,
+  links,
 }: {
   firstName: string;
   lastName: string;
@@ -70,6 +71,7 @@ export async function sendBugReportEmail({
   deviceType?: string | null;
   formFactor?: string | null;
   page?: string | null;
+  links?: string | null;
 }) {
   await transporter.sendMail({
     from: { name: "Workjournal Bug report", address: senderAddress() },
@@ -82,6 +84,7 @@ export async function sendBugReportEmail({
       `From: ${firstName} ${lastName} <${reporterEmail}>`,
       `Device: ${deviceType || "—"} (${formFactor || "—"})`,
       `Page: ${page || "—"}`,
+      `Links: ${links || "—"}`,
       ``,
       `Description:`,
       description,

@@ -1,10 +1,12 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { emailOTP } from "better-auth/plugins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { sendVerificationCodeEmail } from "@/lib/mail";
+import { BIRTHDAY_ERROR, isValidBirthday } from "@/lib/profile";
 
 const googleEnabled =
   !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
@@ -31,6 +33,21 @@ export const auth = betterAuth({
         },
       }
     : undefined,
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          // Reject future/invalid birth dates at the source (the sign-up
+          // form used to accept them). Google sign-ups set it later.
+          const birthday = (user as { birthday?: string | null }).birthday;
+          if (birthday && !isValidBirthday(birthday)) {
+            throw new APIError("BAD_REQUEST", { message: BIRTHDAY_ERROR });
+          }
+          return { data: user };
+        },
+      },
+    },
+  },
   user: {
     additionalFields: {
       // A host role grants nothing by itself: hosts only ever see calendars

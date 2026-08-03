@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { completeProfile } from "@/server/settings";
+import { BIRTHDAY_ERROR, isValidBirthday, todayIso } from "@/lib/profile";
 import styles from "@/app/(auth)/auth.module.css";
 
 // Shown once after the first Google sign-in: collects the fields the
@@ -17,6 +18,12 @@ export function CompleteProfileForm({
 }) {
   const router = useRouter();
   const [role, setRole] = useState<"apprentice" | "host">("apprentice");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const birthdayRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (birthdayRef.current) birthdayRef.current.max = todayIso();
+  }, []);
 
   const mutation = useMutation({
     mutationFn: completeProfile,
@@ -28,11 +35,17 @@ export function CompleteProfileForm({
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setLocalError(null);
     const data = new FormData(event.currentTarget);
+    const birthday = String(data.get("birthday") ?? "");
+    if (!isValidBirthday(birthday)) {
+      setLocalError(BIRTHDAY_ERROR);
+      return;
+    }
     mutation.mutate({
       firstName: String(data.get("firstName") ?? ""),
       lastName: String(data.get("lastName") ?? ""),
-      birthday: String(data.get("birthday") ?? ""),
+      birthday,
       role,
       apprenticeshipStart:
         role === "apprentice"
@@ -70,7 +83,7 @@ export function CompleteProfileForm({
           </div>
           <label className={`${styles.dateField} body-small`}>
             Birth date
-            <input type="date" name="birthday" required />
+            <input ref={birthdayRef} type="date" name="birthday" required />
           </label>
 
           <div className={styles.roleGroup} role="radiogroup" aria-label="Role">
@@ -99,9 +112,9 @@ export function CompleteProfileForm({
             </label>
           )}
 
-          {mutation.isError && (
+          {(localError || mutation.isError) && (
             <p className={`${styles.error} body-medium`}>
-              {(mutation.error as Error).message}
+              {localError ?? (mutation.error as Error).message}
             </p>
           )}
           <md-filled-button type="submit" disabled={mutation.isPending}>
