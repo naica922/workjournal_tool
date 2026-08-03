@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { hostAssignment, user } from "@/db/schema";
 import { requireSession } from "@/lib/session";
 import { sendHostInviteEmail } from "@/lib/mail";
+import { BIRTHDAY_ERROR, isValidBirthday } from "@/lib/profile";
 
 // Identity fields (name, birthday, apprenticeship start) are set once at
 // sign-up and are not editable afterwards; only the team can change.
@@ -54,7 +55,7 @@ const completeProfileSchema = z
   .object({
     firstName: z.string().trim().min(1, "First name is required").max(100),
     lastName: z.string().trim().min(1, "Last name is required").max(100),
-    birthday: z.iso.date(),
+    birthday: z.iso.date().refine(isValidBirthday, BIRTHDAY_ERROR),
     role: z.enum(["apprentice", "host"]),
     apprenticeshipStart: z.iso.date().nullable(),
   })

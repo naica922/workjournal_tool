@@ -204,6 +204,10 @@ export const todo = pgTable("todo", {
     onDelete: "set null",
   }),
   done: boolean("done").notNull().default(false),
+  // Kanban status label shown on the card, independent of the done checkbox.
+  status: text("status", { enum: ["open", "in_progress", "done"] })
+    .notNull()
+    .default("open"),
   // Order of the task within its list (open and done ordered separately).
   position: integer("position").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -223,6 +227,7 @@ export const bugReport = pgTable("bug_report", {
   deviceType: text("device_type"),
   formFactor: text("form_factor", { enum: ["mobile", "laptop"] }),
   page: text("page"),
+  links: text("links"), // optional, free-text links (one per line)
   screenshot: text("screenshot"), // optional base64 data URL
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

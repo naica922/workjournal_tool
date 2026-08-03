@@ -197,6 +197,49 @@
   flex-shrink: 0;
 }
 
+/* Kanban status pill on each open task */
+.statusOpen,
+.statusInProgress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.statusOpen::before,
+.statusInProgress::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.statusOpen {
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.statusOpen::before {
+  background: var(--md-sys-color-outline);
+}
+
+.statusInProgress {
+  background: color-mix(in srgb, #f6bf26 22%, white);
+  color: color-mix(in srgb, #9a6a00 90%, black);
+}
+
+.statusInProgress::before {
+  background: #f6bf26;
+}
+
 .emptyHint {
   color: var(--md-sys-color-on-surface-variant);
   padding: 0.5rem 0.25rem;

@@ -189,9 +189,23 @@ export async function setTodoDone(id: string, done: boolean) {
 
   await db
     .update(todo)
-    .set({ done, position })
+    .set({ done, status: done ? "done" : "open", position })
     .where(and(eq(todo.id, id), eq(todo.userId, session.user.id)));
   return { id, done };
+}
+
+// The Kanban status label on open tasks (done is driven by the checkbox).
+export async function setTodoStatus(
+  id: string,
+  status: "open" | "in_progress",
+) {
+  const session = await requireSession();
+  const parsed = z.enum(["open", "in_progress"]).parse(status);
+  await db
+    .update(todo)
+    .set({ status: parsed })
+    .where(and(eq(todo.id, id), eq(todo.userId, session.user.id)));
+  return { id, status: parsed };
 }
 
 const moveSchema = z.object({

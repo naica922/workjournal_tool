@@ -27,7 +27,14 @@ function presetRange(key: PeriodKey): { from: string; to: string } {
   return { from: isoDate(from), to: isoDate(to) };
 }
 
-export function ExportView() {
+export function ExportView({
+  apprenticeId,
+  apprenticeName,
+}: {
+  // When set, a host exports this apprentice's journal instead of their own.
+  apprenticeId?: string;
+  apprenticeName?: string;
+} = {}) {
   const [period, setPeriod] = useState<PeriodKey>("6m");
   const today = isoDate(new Date());
   const [customFrom, setCustomFrom] = useState(() => {
@@ -42,33 +49,46 @@ export function ExportView() {
       ? { from: customFrom, to: customTo }
       : presetRange(period);
   const customInvalid = period === "custom" && customFrom > customTo;
-  const href = `/api/export?from=${range.from}&to=${range.to}`;
+  const href =
+    `/api/export?from=${range.from}&to=${range.to}` +
+    (apprenticeId ? `&apprenticeId=${apprenticeId}` : "");
 
   return (
     <div className={styles.page}>
-      <h1 className={`${styles.heading} headline-small`}>Export</h1>
+      {!apprenticeId && (
+        <h1 className={`${styles.heading} headline-small`}>Export</h1>
+      )}
 
       <section className={styles.card}>
         <md-icon class={styles.cardIcon}>picture_as_pdf</md-icon>
         <h2 className={`${styles.cardTitle} title-medium`}>
-          Export your journal
+          {apprenticeName
+            ? `Export ${apprenticeName}'s journal`
+            : "Export your journal"}
         </h2>
-        <p className={`${styles.cardText} body-medium`}>
-          Download a PDF summary of your work for a chosen period. It is ideal
-          to share your progress with your host or to keep for your records.
-        </p>
+        {/* The full intro + checklist only on the apprentice's own Export
+            tab; the host's embedded card stays compact. */}
+        {!apprenticeId && (
+          <>
+            <p className={`${styles.cardText} body-medium`}>
+              Download a PDF summary of your work for a chosen period. It is
+              ideal to share your progress with your host or to keep for your
+              records.
+            </p>
 
-        <ul className={styles.included}>
-          <li className={`${styles.includedItem} body-small`}>
-            <md-icon>check</md-icon> A written summary of what you worked on
-          </li>
-          <li className={`${styles.includedItem} body-small`}>
-            <md-icon>check</md-icon> Time invested per project
-          </li>
-          <li className={`${styles.includedItem} body-small`}>
-            <md-icon>check</md-icon> Blockers, solutions and links
-          </li>
-        </ul>
+            <ul className={styles.included}>
+              <li className={`${styles.includedItem} body-small`}>
+                <md-icon>check</md-icon> A written summary of what you worked on
+              </li>
+              <li className={`${styles.includedItem} body-small`}>
+                <md-icon>check</md-icon> Time invested per project
+              </li>
+              <li className={`${styles.includedItem} body-small`}>
+                <md-icon>check</md-icon> Blockers, solutions and links
+              </li>
+            </ul>
+          </>
+        )}
 
         <p className={`${styles.periodLabel} body-medium`}>Period</p>
         <div className={styles.periodRow} role="radiogroup" aria-label="Period">

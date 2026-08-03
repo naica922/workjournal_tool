@@ -32,6 +32,7 @@ import {
   moveTodo,
   renameTodoList,
   setTodoDone,
+  setTodoStatus,
   updateTodo,
 } from "@/server/todos";
 import { listProjects } from "@/server/projects";
@@ -55,6 +56,7 @@ function TaskItem({
   onToggle,
   onEdit,
   onDelete,
+  onSetStatus,
 }: {
   todo: Todo;
   project: Project | null;
@@ -62,6 +64,7 @@ function TaskItem({
   onToggle: (done: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
+  onSetStatus: (status: "open" | "in_progress") => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: todo.id });
@@ -97,6 +100,24 @@ function TaskItem({
           {todo.description && (
             <p className={`${styles.taskNote} body-small`}>{todo.description}</p>
           )}
+          <button
+            type="button"
+            className={
+              todo.status === "in_progress"
+                ? styles.statusInProgress
+                : styles.statusOpen
+            }
+            title="Toggle status"
+            onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetStatus(
+                todo.status === "in_progress" ? "open" : "in_progress",
+              );
+            }}
+          >
+            {todo.status === "in_progress" ? "In progress" : "To do"}
+          </button>
           {(deadline || project) && (
             <p className={`${styles.taskMeta} body-small`}>
               {deadline && (
@@ -176,6 +197,7 @@ function ListColumn({
   onToggle,
   onEditTask,
   onDeleteTask,
+  onSetStatus,
 }: {
   list: TodoList;
   openTodos: Todo[];
@@ -188,6 +210,7 @@ function ListColumn({
   onToggle: (todo: Todo, done: boolean) => void;
   onEditTask: (todo: Todo) => void;
   onDeleteTask: (id: string) => void;
+  onSetStatus: (todo: Todo, status: "open" | "in_progress") => void;
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(list.title);
@@ -254,6 +277,7 @@ function ListColumn({
               onToggle={(done) => onToggle(t, done)}
               onEdit={() => onEditTask(t)}
               onDelete={() => onDeleteTask(t.id)}
+              onSetStatus={(status) => onSetStatus(t, status)}
             />
           ))}
           {openTodos.length === 0 && (
@@ -389,6 +413,16 @@ export function TodosView() {
       setTodoDone(id, done),
     onSuccess: invalidate,
   });
+  const statusMut = useMutation({
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "open" | "in_progress";
+    }) => setTodoStatus(id, status),
+    onSuccess: invalidate,
+  });
   const deleteTodoMut = useMutation({
     mutationFn: (id: string) => deleteTodo(id),
     onSuccess: invalidate,
@@ -515,6 +549,9 @@ export function TodosView() {
                   onToggle={(t, done) => doneMut.mutate({ id: t.id, done })}
                   onEditTask={(t) => setEditing(t)}
                   onDeleteTask={(id) => deleteTodoMut.mutate(id)}
+                  onSetStatus={(t, status) =>
+                    statusMut.mutate({ id: t.id, status })
+                  }
                 />
               );
             })}

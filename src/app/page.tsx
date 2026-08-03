@@ -8,7 +8,12 @@ export default async function Home() {
 
   return (
     <AppShell active="calendar" role={role} userName={session.user.name}>
-      <CalendarView />
+      <CalendarView
+        minDate={
+          (session.user as { apprenticeshipStart?: string | null })
+            .apprenticeshipStart ?? undefined
+        }
+      />
     </AppShell>
   );
 }

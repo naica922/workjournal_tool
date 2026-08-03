@@ -156,7 +156,7 @@
 .fc .fc-event {
   border: none;
   border-radius: 0.5rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   font-size: 0.75rem;
   cursor: pointer;
   /* Events are anchors; keep the white event text, not link blue */
@@ -242,8 +242,15 @@
 }
 
 /* Denser hour grid like the mock (30-minute slots at 1.5rem = 48px/hour) */
+/* Taller half-hour slots so even short blocks fit a readable title line */
 .fc .fc-timegrid-slot {
-  height: 1.5rem;
+  height: 2rem;
+}
+
+/* Keep the title readable in very short blocks: FullCalendar tags them */
+.fc .fc-timegrid-event.fc-timegrid-event-short .wj-event-title {
+  font-size: 0.6875rem;
+  line-height: 1.1;
 }
 
 /* Only clean hour lines; no dotted half-hour lines */

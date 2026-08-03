@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signUp } from "@/lib/auth-client";
+import { BIRTHDAY_ERROR, isValidBirthday, todayIso } from "@/lib/profile";
 import styles from "@/app/(auth)/auth.module.css";
 
 export function RegisterForm() {
@@ -11,16 +12,29 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [role, setRole] = useState<"apprentice" | "host">("apprentice");
+  const birthdayRef = useRef<HTMLInputElement | null>(null);
+
+  // Cap the birth date picker at today (set client-side to avoid an SSR
+  // hydration mismatch on the max attribute).
+  useEffect(() => {
+    if (birthdayRef.current) birthdayRef.current.max = todayIso();
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setPending(true);
 
     const data = new FormData(event.currentTarget);
     const firstName = String(data.get("firstName") ?? "").trim();
     const lastName = String(data.get("lastName") ?? "").trim();
 
+    const birthday = String(data.get("birthday") ?? "");
+    if (!isValidBirthday(birthday)) {
+      setError(BIRTHDAY_ERROR);
+      return;
+    }
+
+    setPending(true);
     const email = String(data.get("email") ?? "");
     const { data: result, error } = await signUp.email({
       name: `${firstName} ${lastName}`.trim(),
@@ -29,7 +43,7 @@ export function RegisterForm() {
       role,
       firstName,
       lastName,
-      birthday: String(data.get("birthday") ?? ""),
+      birthday,
       apprenticeshipStart:
         role === "apprentice"
           ? String(data.get("apprenticeshipStart") ?? "")
@@ -94,7 +108,7 @@ export function RegisterForm() {
           />
           <label className={`${styles.dateField} body-small`}>
             Birth date
-            <input type="date" name="birthday" required />
+            <input ref={birthdayRef} type="date" name="birthday" required />
           </label>
 
           <div className={styles.roleGroup} role="radiogroup" aria-label="Role">
