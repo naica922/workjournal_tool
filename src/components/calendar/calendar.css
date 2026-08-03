@@ -163,6 +163,26 @@
   color: #fff;
 }
 
+/* Past entries render pastel with dark text so they read as "done" */
+.fc .fc-event.wj-past {
+  color: #1f1f1f;
+}
+
+/* Late marker: an entry added/changed after the weekly Fri 18:00 deadline */
+.wj-late {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-right: 0.15rem;
+}
+
+.wj-late-icon {
+  font-size: 0.875rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--md-sys-color-error);
+}
+
 /* Event content like the mock: stacked lines — bold title, then time,
    then location/project, then a links pill. */
 .wj-event {

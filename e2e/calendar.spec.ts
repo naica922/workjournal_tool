@@ -12,7 +12,9 @@ test("UC-05/UC-06: an apprentice creates a calendar block with details and sees 
   const email = uniqueEmail("apprentice");
   await register(page, { name: "E2E Apprentice", email });
 
-  await dragCreateSlot(page);
+  // Plan in the future so the block keeps its saturated colour (past blocks
+  // fade to pastel).
+  await dragCreateSlot(page, { nextWeek: true });
 
   await textField(page, "title").fill("Write IPA documentation");
   // Blockers live in a collapsible section as blocker/solution pairs.

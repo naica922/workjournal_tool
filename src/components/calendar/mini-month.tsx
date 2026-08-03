@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./mini-month.module.css";
 
 export const GOTO_DATE_EVENT = "workjournal:goto-date";
+
+function isoDay(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 const MONTH_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -25,10 +31,24 @@ function sameDay(a: Date, b: Date) {
 // calendar there (loose coupling via a window event so the server-rendered
 // shell can slot it next to the client calendar).
 export function MiniMonth() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+
+  // On the calendar itself, jump the mounted calendar instantly; from any
+  // other tab, navigate to the calendar on the picked day.
+  function goToDay(day: Date) {
+    if (pathname === "/") {
+      window.dispatchEvent(
+        new CustomEvent(GOTO_DATE_EVENT, { detail: day.getTime() }),
+      );
+    } else {
+      router.push(`/?date=${isoDay(day)}`);
+    }
+  }
 
   const today = new Date();
   // Monday-first offset of the 1st (getDay: 0=Sun..6=Sat).
@@ -88,11 +108,7 @@ export function MiniMonth() {
                     ? styles.dayOutside
                     : styles.day
               }
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent(GOTO_DATE_EVENT, { detail: day.getTime() }),
-                )
-              }
+              onClick={() => goToDay(day)}
             >
               {day.getDate()}
             </button>
