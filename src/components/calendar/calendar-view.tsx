@@ -31,6 +31,7 @@ import {
 } from "@/server/blocks";
 import { listProjects } from "@/server/projects";
 import { DEFAULT_BLOCK_COLOR, type BlockInput } from "@/lib/blocks";
+import { isLateEntry } from "@/lib/week";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import { EventDialog, type DialogState } from "./event-dialog";
 import styles from "./calendar-view.module.css";
@@ -57,10 +58,21 @@ function renderEvent(arg: EventContentArg) {
   const projectName = event.extendedProps.projectName as string | null;
   const projectIcon = event.extendedProps.projectIcon as string | null;
   const links = (event.extendedProps.links as string[]) ?? [];
+  const isLate = event.extendedProps.isLate as boolean;
+  // Flags an entry added or changed after its week's Friday 18:00 deadline.
+  const lateMark = isLate ? (
+    <span
+      className="wj-late"
+      title="Added or changed after the weekly deadline (Fri 18:00)"
+    >
+      <md-icon class="wj-late-icon">history</md-icon>
+    </span>
+  ) : null;
   // Month cells fit one line: just the title next to the time.
   if (arg.view.type === "dayGridMonth" && !event.allDay) {
     return (
       <div className="wj-event wj-event--allday">
+        {lateMark}
         <span className="wj-event-title">{event.title}</span>
         <span className="wj-event-meta">
           {event.start ? timeFormat.format(event.start) : ""}
@@ -72,7 +84,10 @@ function renderEvent(arg: EventContentArg) {
   // like the mock (title, time, location, then a links pill).
   return (
     <div className={event.allDay ? "wj-event wj-event--allday" : "wj-event"}>
-      <span className="wj-event-title">{event.title}</span>
+      <span className="wj-event-title">
+        {lateMark}
+        {event.title}
+      </span>
       <span className="wj-event-meta">{time}</span>
       {(location || projectName) && !event.allDay && (
         <span className="wj-event-meta">
@@ -170,6 +185,8 @@ export function CalendarView({
   const ownerKey = ownerId ?? "me";
   const isMobile = useIsMobile();
   const calendarRef = useRef<FullCalendar | null>(null);
+  // A single "now" for past/late checks, kept out of render impurity.
+  const [now] = useState(() => Date.now());
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
@@ -224,27 +241,35 @@ export function CalendarView({
         const project = occurrence.projectId
           ? projectById.get(occurrence.projectId)
           : undefined;
+        const color = occurrence.color ?? DEFAULT_BLOCK_COLOR;
+        // Past entries fade to a pastel tint so it is clear what is done.
+        const isPast = occurrence.end.getTime() < now;
+        // Late = created/changed after its week's Friday 18:00 deadline.
+        const isLate = isLateEntry(occurrence.updatedAt, occurrence.start);
         return {
           id: occurrence.occurrenceId,
           title: occurrence.title,
           start: occurrence.start,
           end: occurrence.end,
           allDay: occurrence.allDay,
-          backgroundColor: occurrence.color ?? DEFAULT_BLOCK_COLOR,
+          backgroundColor: isPast
+            ? `color-mix(in srgb, ${color} 30%, white)`
+            : color,
           borderColor: "transparent",
-          textColor: "#ffffff",
+          classNames: isPast ? ["wj-past"] : [],
           extendedProps: {
             location: occurrence.location,
             projectName: project?.name ?? null,
             projectIcon: project?.icon ?? null,
             projectColor: project?.color ?? null,
+            isLate,
             links: (occurrence.links ?? [])
               .map((link) => link.url)
               .filter(Boolean),
           },
         };
       }),
-    [data, projectById],
+    [data, projectById, now],
   );
 
   const invalidate = () =>
@@ -391,6 +416,19 @@ export function CalendarView({
     };
     window.addEventListener("workjournal:goto-date", handleGoto);
     return () => window.removeEventListener("workjournal:goto-date", handleGoto);
+  }, []);
+
+  // When arriving from another tab's mini month (/?date=YYYY-MM-DD), jump
+  // the calendar to that day on mount by re-using the goto-date event (its
+  // listener is registered by the effect above).
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("date");
+    if (!param) return;
+    const date = new Date(`${param}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return;
+    window.dispatchEvent(
+      new CustomEvent("workjournal:goto-date", { detail: date.getTime() }),
+    );
   }, []);
 
   const weekDays = useMemo(() => workweekOf(selectedDay), [selectedDay]);

@@ -2,7 +2,7 @@
 
 import { and, eq, lt, gt, or, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { calendarBlock, project } from "@/db/schema";
+import { calendarBlock, project, type CalendarBlock } from "@/db/schema";
 import { requireSession } from "@/lib/session";
 import { assertCanViewCalendar } from "@/lib/access";
 import { blockInputSchema, listRangeSchema, type BlockInput } from "@/lib/blocks";
@@ -33,6 +33,18 @@ export async function listBlocks(input: {
   });
 
   return expandOccurrences(blocks, rangeStart, rangeEnd);
+}
+
+// All raw (unexpanded) blocks of a calendar owner, for the weekly log.
+export async function listAllBlocks(
+  apprenticeId?: string,
+): Promise<CalendarBlock[]> {
+  const session = await requireSession();
+  const ownerId = apprenticeId ?? session.user.id;
+  await assertCanViewCalendar(session.user.id, ownerId);
+  return db.query.calendarBlock.findMany({
+    where: eq(calendarBlock.userId, ownerId),
+  });
 }
 
 // A block may only reference a project of the same user.

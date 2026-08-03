@@ -85,9 +85,18 @@ export async function signOut(page: Page) {
   await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
 }
 
-// Drags over the tuesday 09:00-10:00 slots of the current week to open the
-// creation dialog, like a user planning a block in the calendar.
-export async function dragCreateSlot(page: Page) {
+// Drags over the tuesday 09:00-10:00 slots to open the creation dialog, like
+// a user planning a block. Pass { nextWeek } to plan in the following week —
+// used when the block must stay in the future (upcoming events render in
+// their saturated colour; past ones fade to pastel).
+export async function dragCreateSlot(
+  page: Page,
+  opts: { nextWeek?: boolean } = {},
+) {
+  if (opts.nextWeek) {
+    await page.locator(".fc-next-button").click();
+    await page.waitForTimeout(300);
+  }
   const column = page.locator(".fc-timegrid-col.fc-day-tue");
   const columnBox = await column.boundingBox();
   const slotStart = page.locator('td.fc-timegrid-slot-lane[data-time="09:00:00"]');
