@@ -44,7 +44,7 @@ type WeekRow = {
 // Weekly log shown to the host: what the apprentice had entered by each
 // Friday 18:00 deadline, and how many entries arrived late.
 export function WeeklyLog({ ownerId }: { ownerId: string }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   // Absolute "now" instant for sealing/late checks (stable per mount).
   const [now] = useState(() => Date.now());
   const { data: blocks } = useQuery({

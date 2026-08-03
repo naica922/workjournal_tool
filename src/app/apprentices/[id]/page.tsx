@@ -39,7 +39,6 @@ export default async function ApprenticeCalendarPage(
       <CalendarView
         ownerId={id}
         readOnly
-        embedded
         title={`${assignment.apprenticeName}'s calendar`}
         minDate={assignment.apprenticeshipStart ?? undefined}
       />

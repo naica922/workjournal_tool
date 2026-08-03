@@ -168,7 +168,12 @@
   color: #1f1f1f;
 }
 
-/* Late marker: an entry added/changed after the weekly Fri 18:00 deadline */
+/* Late entries (added/changed after the weekly Fri 18:00 deadline) are
+   flagged red: a red ring around the block plus the clock marker. */
+.fc .fc-event.wj-late-event {
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-error);
+}
+
 .wj-late {
   display: inline-flex;
   align-items: center;
