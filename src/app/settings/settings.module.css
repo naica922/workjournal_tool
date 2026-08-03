@@ -207,3 +207,9 @@
   color: var(--md-sys-color-on-surface-variant);
   margin: 0;
 }
+
+/* Full-width row that holds the inline export panel for one apprentice */
+.exportRow {
+  display: block;
+  padding: 0.25rem 0 0.75rem;
+}

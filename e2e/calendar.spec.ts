@@ -98,6 +98,16 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
   await expect(
     page.locator("md-outlined-button", { hasText: "Open calendar" }),
   ).toBeVisible();
+
+  // The host can export this apprentice's journal from the list.
+  await page.locator("md-text-button", { hasText: "Export" }).click();
+  const exportLink = page.locator("a[download]");
+  await expect(exportLink).toBeVisible();
+  await expect(exportLink).toHaveAttribute(
+    "href",
+    /\/api\/export\?.*apprenticeId=/,
+  );
+
   await page.locator("md-outlined-button", { hasText: "Open calendar" }).click();
 
   await expect(page.getByRole("heading", { name: /E2E Apprentice's calendar/ })).toBeVisible();

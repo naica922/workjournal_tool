@@ -6,7 +6,6 @@ import { requireProfile } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { WeeklyLog } from "@/components/calendar/weekly-log";
-import { ExportView } from "@/components/export/export-view";
 
 export default async function ApprenticeCalendarPage(
   props: PageProps<"/apprentices/[id]">,
@@ -36,10 +35,6 @@ export default async function ApprenticeCalendarPage(
 
   return (
     <AppShell active="apprentices" role="host" userName={session.user.name}>
-      <ExportView
-        apprenticeId={id}
-        apprenticeName={assignment.apprenticeName ?? undefined}
-      />
       <WeeklyLog ownerId={id} />
       <CalendarView
         ownerId={id}
