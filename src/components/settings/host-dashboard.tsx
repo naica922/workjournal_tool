@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptInvite,
@@ -11,6 +11,7 @@ import {
   promoteApprenticeToHost,
 } from "@/server/settings";
 import { apprenticeshipYear } from "@/lib/apprenticeship";
+import { ExportView } from "@/components/export/export-view";
 import styles from "@/app/settings/settings.module.css";
 
 // Host view: accept or decline invitations and open apprentice calendars.
@@ -18,6 +19,8 @@ export function HostDashboard() {
   const queryClient = useQueryClient();
   // Promoting an apprentice to host is rare; it asks for confirmation inline.
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  // Which apprentice's export panel is expanded, if any.
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const { data: invites } = useQuery({
     queryKey: ["my-invites"],
@@ -116,33 +119,54 @@ export function HostDashboard() {
                 </md-filled-button>
               </li>
             ) : (
-              <li key={apprentice.assignmentId} className={styles.listItem}>
-                <span className={`${styles.listItemText} body-medium`}>
-                  {apprentice.name}
-                  <br />
-                  <span className={`${styles.listItemSub} body-small`}>
-                    {apprentice.email}
-                    {apprentice.apprenticeshipStart &&
-                      ` · Year ${apprenticeshipYear(apprentice.apprenticeshipStart)}`}
-                    {apprentice.team && ` · ${apprentice.team}`}
+              <Fragment key={apprentice.assignmentId}>
+                <li className={styles.listItem}>
+                  <span className={`${styles.listItemText} body-medium`}>
+                    {apprentice.name}
+                    <br />
+                    <span className={`${styles.listItemSub} body-small`}>
+                      {apprentice.email}
+                      {apprentice.apprenticeshipStart &&
+                        ` · Year ${apprenticeshipYear(apprentice.apprenticeshipStart)}`}
+                      {apprentice.team && ` · ${apprentice.team}`}
+                    </span>
                   </span>
-                </span>
-                <md-icon-button
-                  type="button"
-                  title="Make host"
-                  onClick={() => setConfirmingId(apprentice.id)}
-                >
-                  <md-icon>shield_person</md-icon>
-                </md-icon-button>
-                <Link href={`/apprentices/${apprentice.id}/projects`}>
-                  <md-text-button type="button">Projects</md-text-button>
-                </Link>
-                <Link href={`/apprentices/${apprentice.id}`}>
-                  <md-outlined-button type="button">
-                    Open calendar
-                  </md-outlined-button>
-                </Link>
-              </li>
+                  <md-icon-button
+                    type="button"
+                    title="Make host"
+                    onClick={() => setConfirmingId(apprentice.id)}
+                  >
+                    <md-icon>shield_person</md-icon>
+                  </md-icon-button>
+                  <md-text-button
+                    type="button"
+                    onClick={() =>
+                      setExportingId((current) =>
+                        current === apprentice.id ? null : apprentice.id,
+                      )
+                    }
+                  >
+                    <md-icon slot="icon">download</md-icon>
+                    Export
+                  </md-text-button>
+                  <Link href={`/apprentices/${apprentice.id}/projects`}>
+                    <md-text-button type="button">Projects</md-text-button>
+                  </Link>
+                  <Link href={`/apprentices/${apprentice.id}`}>
+                    <md-outlined-button type="button">
+                      Open calendar
+                    </md-outlined-button>
+                  </Link>
+                </li>
+                {exportingId === apprentice.id && (
+                  <li className={styles.exportRow}>
+                    <ExportView
+                      apprenticeId={apprentice.id}
+                      apprenticeName={apprentice.name}
+                    />
+                  </li>
+                )}
+              </Fragment>
             ),
           )}
           {apprentices?.length === 0 && (
