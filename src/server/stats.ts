@@ -1,8 +1,15 @@
 "use server";
 
-import { and, eq, gt, inArray, ne, or } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, ne, or } from "drizzle-orm";
 import { db } from "@/db";
-import { calendarBlock, hostAssignment, user, type CalendarBlock } from "@/db/schema";
+import {
+  calendarBlock,
+  dayLocation,
+  hostAssignment,
+  user,
+  type CalendarBlock,
+  type DayLocation,
+} from "@/db/schema";
 import { requireSession } from "@/lib/session";
 
 export type ApprenticeSummary = {
@@ -15,6 +22,7 @@ export type ApprenticeSummary = {
   // Recent log blocks (recurring, or ending within the last ~5 weeks) so the
   // client can compute last week's stats in local time.
   blocks: CalendarBlock[];
+  dayLocations: DayLocation[];
 };
 
 // For the host landing: accepted apprentices plus their recent log blocks.
@@ -58,5 +66,23 @@ export async function listApprenticeSummaries(): Promise<ApprenticeSummary[]> {
     byUser.set(block.userId, list);
   }
 
-  return apprentices.map((a) => ({ ...a, blocks: byUser.get(a.id) ?? [] }));
+  const sinceDay = new Date(since).toISOString().slice(0, 10);
+  const locations = await db.query.dayLocation.findMany({
+    where: and(
+      inArray(dayLocation.userId, ids),
+      gte(dayLocation.date, sinceDay),
+    ),
+  });
+  const locByUser = new Map<string, DayLocation[]>();
+  for (const loc of locations) {
+    const list = locByUser.get(loc.userId) ?? [];
+    list.push(loc);
+    locByUser.set(loc.userId, list);
+  }
+
+  return apprentices.map((a) => ({
+    ...a,
+    blocks: byUser.get(a.id) ?? [],
+    dayLocations: locByUser.get(a.id) ?? [],
+  }));
 }

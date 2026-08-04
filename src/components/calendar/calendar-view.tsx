@@ -26,7 +26,9 @@ import {
   createBlock,
   deleteBlock,
   listBlocks,
+  listDayLocations,
   rescheduleBlock,
+  setDayLocation,
   updateBlock,
 } from "@/server/blocks";
 import { listProjects } from "@/server/projects";
@@ -45,6 +47,11 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", {
 
 const LOCATION_LABEL = { home: "Home", office: "Office" } as const;
 
+function isoDay(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function renderEvent(arg: EventContentArg) {
   const { event } = arg;
   const time = event.allDay
@@ -52,9 +59,13 @@ function renderEvent(arg: EventContentArg) {
     : event.start && event.end
       ? `${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}`
       : "";
-  const location = event.extendedProps.location as
+  const dayLocation = event.extendedProps.dayLocation as
     | keyof typeof LOCATION_LABEL
     | null;
+  const locationDetail = event.extendedProps.locationDetail as string | null;
+  // Prefer the specific spot; fall back to the day's home/office label.
+  const location =
+    locationDetail || (dayLocation ? LOCATION_LABEL[dayLocation] : null);
   const projectName = event.extendedProps.projectName as string | null;
   const projectIcon = event.extendedProps.projectIcon as string | null;
   const links = (event.extendedProps.links as string[]) ?? [];
@@ -94,7 +105,7 @@ function renderEvent(arg: EventContentArg) {
       <span className="wj-event-meta">{time}</span>
       {(location || projectName) && !event.allDay && (
         <span className="wj-event-meta">
-          {location ? LOCATION_LABEL[location] : null}
+          {location}
           {location && projectName ? " · " : null}
           {projectName ? (
             <>
@@ -237,6 +248,25 @@ export function CalendarView({
     queryFn: () => listProjects(ownerId),
   });
 
+  const { data: dayLocations } = useQuery({
+    queryKey: ["day-locations", ownerKey, range?.start.toISOString()],
+    enabled: !!range,
+    queryFn: () =>
+      listDayLocations({
+        start: isoDay(range!.start),
+        end: isoDay(range!.end),
+        apprenticeId: ownerId,
+      }),
+  });
+
+  const dayLocByDate = useMemo(() => {
+    const map = new Map<string, "home" | "office">();
+    for (const d of dayLocations ?? []) {
+      map.set(d.date, d.location as "home" | "office");
+    }
+    return map;
+  }, [dayLocations]);
+
   const projectById = useMemo(
     () => new Map((projects ?? []).map((p) => [p.id, p])),
     [projects],
@@ -278,7 +308,12 @@ export function CalendarView({
             ...(isLate ? ["wj-late-event"] : []),
           ],
           extendedProps: {
-            location: occurrence.location,
+            // Day-level home/office (falls back to the old per-block value).
+            dayLocation:
+              dayLocByDate.get(isoDay(occurrence.start)) ??
+              occurrence.location ??
+              null,
+            locationDetail: occurrence.locationDetail ?? null,
             projectName: project?.name ?? null,
             projectIcon: project?.icon ?? null,
             projectColor: project?.color ?? null,
@@ -289,11 +324,13 @@ export function CalendarView({
           },
         };
       }),
-    [data, projectById, now],
+    [data, projectById, now, dayLocByDate],
   );
 
-  const invalidate = () =>
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["blocks", ownerKey] });
+    queryClient.invalidateQueries({ queryKey: ["day-locations", ownerKey] });
+  };
 
   // Clears the persisted selection mirror (unselectAuto is off).
   const clearSelection = useCallback(() => {
@@ -307,8 +344,24 @@ export function CalendarView({
   }, [clearSelection]);
 
   const saveMutation = useMutation({
-    mutationFn: ({ input, blockId }: { input: BlockInput; blockId?: string }) =>
-      blockId ? updateBlock(blockId, input) : createBlock(input),
+    mutationFn: async ({
+      input,
+      blockId,
+      dayLocation,
+    }: {
+      input: BlockInput;
+      blockId?: string;
+      dayLocation?: "home" | "office";
+    }) => {
+      const saved = blockId
+        ? await updateBlock(blockId, input)
+        : await createBlock(input);
+      // A timed entry also records that day's home/office choice.
+      if (dayLocation && !input.allDay && !readOnly) {
+        await setDayLocation(isoDay(new Date(input.start)), dayLocation);
+      }
+      return saved;
+    },
     onSuccess: () => {
       invalidate();
       setDialog(null);
@@ -710,9 +763,18 @@ export function CalendarView({
           readOnly={readOnly}
           pending={saveMutation.isPending || deleteMutation.isPending}
           error={dialogError}
+          initialDayLocation={dayLocByDate.get(
+            isoDay(
+              dialog.mode === "edit" ? dialog.occurrence.start : dialog.start,
+            ),
+          )}
           onClose={closeDialog}
-          onSave={(input, blockId) =>
-            saveMutation.mutate({ input: { ...input, kind: mode }, blockId })
+          onSave={(input, blockId, dayLocation) =>
+            saveMutation.mutate({
+              input: { ...input, kind: mode },
+              blockId,
+              dayLocation,
+            })
           }
           onDelete={(blockId) => deleteMutation.mutate(blockId)}
         />

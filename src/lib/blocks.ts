@@ -103,7 +103,9 @@ export const blockInputSchema = z
     description: z.string().max(5000).optional(),
     projectId: z.uuid().nullable().optional(),
     blockerEntries: z.array(blockerEntrySchema).max(20).default([]),
-    location: z.enum(["home", "office"]),
+    // Home/office is now day-level; a block keeps only its specific spot.
+    location: z.enum(["home", "office"]).nullable().optional(),
+    locationDetail: z.string().trim().max(200).nullable().optional(),
     color: z
       .enum(BLOCK_COLORS.map((c) => c.value) as [string, ...string[]])
       .optional(),

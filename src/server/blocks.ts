@@ -1,8 +1,15 @@
 "use server";
 
-import { and, eq, lt, gt, or, ne } from "drizzle-orm";
+import { and, eq, lt, gt, gte, or, ne } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db";
-import { calendarBlock, project, type CalendarBlock } from "@/db/schema";
+import {
+  calendarBlock,
+  dayLocation,
+  project,
+  type CalendarBlock,
+  type DayLocation,
+} from "@/db/schema";
 import { requireSession } from "@/lib/session";
 import { assertCanViewCalendar } from "@/lib/access";
 import { blockInputSchema, listRangeSchema, type BlockInput } from "@/lib/blocks";
@@ -49,6 +56,42 @@ export async function listAllBlocks(
   });
 }
 
+// Day-level home/office for a range (YYYY-MM-DD keys), access-checked.
+export async function listDayLocations(input: {
+  start: string; // ISO date (YYYY-MM-DD)
+  end: string;
+  apprenticeId?: string;
+}): Promise<DayLocation[]> {
+  const session = await requireSession();
+  const ownerId = input.apprenticeId ?? session.user.id;
+  await assertCanViewCalendar(session.user.id, ownerId);
+  return db.query.dayLocation.findMany({
+    where: and(
+      eq(dayLocation.userId, ownerId),
+      gte(dayLocation.date, input.start),
+      lt(dayLocation.date, input.end),
+    ),
+  });
+}
+
+// Upsert the current user's home/office choice for one day.
+export async function setDayLocation(
+  date: string,
+  location: "home" | "office",
+) {
+  const session = await requireSession();
+  const day = z.iso.date().parse(date);
+  const loc = z.enum(["home", "office"]).parse(location);
+  await db
+    .insert(dayLocation)
+    .values({ userId: session.user.id, date: day, location: loc })
+    .onConflictDoUpdate({
+      target: [dayLocation.userId, dayLocation.date],
+      set: { location: loc, updatedAt: new Date() },
+    });
+  return { date: day, location: loc };
+}
+
 // A block may only reference a project of the same user.
 async function assertOwnProject(userId: string, projectId: string) {
   const owned = await db.query.project.findFirst({
@@ -72,7 +115,8 @@ function blockValues(data: BlockInput) {
     blockerEntries: data.blockerEntries.filter(
       (entry) => entry.blocker || entry.solutionSteps,
     ),
-    location: data.location,
+    location: data.location ?? null,
+    locationDetail: data.locationDetail?.trim() || null,
     color: data.color ?? null,
     recurrence: data.recurrence,
     recurrenceInterval: isCustom ? (data.recurrenceInterval ?? 1) : null,

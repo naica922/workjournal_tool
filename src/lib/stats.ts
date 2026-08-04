@@ -1,5 +1,20 @@
 import type { BlockOccurrence } from "@/lib/recurrence";
+import type { DayLocation } from "@/db/schema";
 import { fridayCutoff, isLateEntry, weekMonday } from "@/lib/week";
+
+function isoDay(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Day (YYYY-MM-DD) -> home/office, from the day-level location records.
+export function dayLocationMap(
+  locations: DayLocation[],
+): Map<string, "home" | "office"> {
+  const map = new Map<string, "home" | "office">();
+  for (const l of locations) map.set(l.date, l.location as "home" | "office");
+  return map;
+}
 
 // Weekly targets an apprentice is expected to meet.
 export const WEEKLY_TARGET_HOURS = 40;
@@ -19,6 +34,7 @@ const HOUR_MS = 60 * 60 * 1000;
 export function weekStats(
   occurrences: BlockOccurrence[],
   monday: Date,
+  dayLoc?: Map<string, "home" | "office">,
 ): WeekStats {
   const start = monday.getTime();
   const end = start + 7 * 24 * HOUR_MS;
@@ -36,8 +52,10 @@ export function weekStats(
     if (occ.allDay) continue;
     const h = Math.max(0, (occ.end.getTime() - occ.start.getTime()) / HOUR_MS);
     hours += h;
-    if (occ.location === "home") homeHours += h;
-    else if (occ.location === "office") officeHours += h;
+    // Home/office is day-level; fall back to the old per-block value.
+    const loc = dayLoc?.get(isoDay(occ.start)) ?? occ.location;
+    if (loc === "home") homeHours += h;
+    else if (loc === "office") officeHours += h;
   }
   return { entries, hours, officeHours, homeHours, late };
 }

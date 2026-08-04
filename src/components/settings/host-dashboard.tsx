@@ -12,21 +12,26 @@ import { listApprenticeSummaries } from "@/server/stats";
 import { apprenticeshipYear } from "@/lib/apprenticeship";
 import { expandOccurrences } from "@/lib/recurrence";
 import {
+  dayLocationMap,
   expectationFlags,
   lastCompletedMonday,
   weekStats,
 } from "@/lib/stats";
+import type { DayLocation } from "@/db/schema";
 import { ExportView } from "@/components/export/export-view";
 import styles from "@/app/settings/settings.module.css";
 
 // Last completed week's stats + flags for one apprentice (computed in local
 // time from the recent log blocks the server returned).
-function apprenticeWeekStatus(blocks: Parameters<typeof expandOccurrences>[0]) {
+function apprenticeWeekStatus(
+  blocks: Parameters<typeof expandOccurrences>[0],
+  dayLocations: DayLocation[],
+) {
   const monday = lastCompletedMonday(new Date());
   const end = new Date(monday);
   end.setDate(end.getDate() + 7);
   const occ = expandOccurrences(blocks, monday, end);
-  const stats = weekStats(occ, monday);
+  const stats = weekStats(occ, monday, dayLocationMap(dayLocations));
   return { monday, stats, flags: expectationFlags(stats) };
 }
 
@@ -109,6 +114,7 @@ export function HostDashboard() {
           {(apprentices ?? []).map((apprentice) => {
             const { monday, stats, flags } = apprenticeWeekStatus(
               apprentice.blocks,
+              apprentice.dayLocations,
             );
             return (
             <Fragment key={apprentice.assignmentId}>
