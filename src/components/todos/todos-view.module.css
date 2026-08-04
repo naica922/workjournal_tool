@@ -319,3 +319,35 @@
     width: 100%;
   }
 }
+
+.subnote {
+  margin: 0.15rem 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.newListInput {
+  font: inherit;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 0.5rem;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  outline: none;
+  min-width: 12rem;
+}
+
+.newListInput:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.confirmDelete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.confirmYes {
+  color: var(--md-sys-color-error);
+}

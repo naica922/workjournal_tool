@@ -63,7 +63,6 @@ export function TopBar({
             label: "Projects",
           },
         ]),
-    { href: "/export", key: "export", icon: "picture_as_pdf", label: "Export" },
     { href: "/settings", key: "settings", icon: "settings", label: "Settings" },
   ];
 
@@ -81,6 +80,14 @@ export function TopBar({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.svg" alt="" width={28} height={28} className={styles.brandLogo} />
         <span className={styles.brand}>Workjournal</span>
+        <Link
+          href="/report-bug"
+          className={styles.barAction}
+          aria-label="Report a bug"
+          title="Report a bug"
+        >
+          <md-icon>bug_report</md-icon>
+        </Link>
         <Link
           href="/settings"
           className={styles.avatar}

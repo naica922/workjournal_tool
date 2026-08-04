@@ -8,9 +8,22 @@ import { requireSession } from "@/lib/session";
 import { sendHostInviteEmail } from "@/lib/mail";
 import { BIRTHDAY_ERROR, isValidBirthday } from "@/lib/profile";
 
-// Identity fields (name, birthday, apprenticeship start) are set once at
-// sign-up and are not editable afterwards; only the team can change.
+// Personal fields are self-service: everything can be corrected here.
+// birthday/apprenticeshipStart may be cleared (null) — birthday is optional
+// and only relevant for apprentices.
+const optionalDate = z.preprocess(
+  (value) => (value === "" || value === undefined ? null : value),
+  z.union([z.iso.date(), z.null()]),
+);
+
 const profileSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(100),
+  lastName: z.string().trim().min(1, "Last name is required").max(100),
+  birthday: optionalDate.refine(
+    (value) => value === null || isValidBirthday(value),
+    BIRTHDAY_ERROR,
+  ),
+  apprenticeshipStart: optionalDate,
   team: z.string().trim().max(200).nullable(),
 });
 
@@ -42,11 +55,31 @@ export async function updateProfile(input: unknown) {
 
   const [updated] = await db
     .update(user)
-    .set({ team: data.team, updatedAt: new Date() })
+    .set({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      name: `${data.firstName} ${data.lastName}`.trim(),
+      birthday: data.birthday,
+      apprenticeshipStart: data.apprenticeshipStart,
+      team: data.team,
+      updatedAt: new Date(),
+    })
     .where(eq(user.id, session.user.id))
     .returning({ id: user.id });
 
   return updated;
+}
+
+// Self-service role switch (both directions). Switching is deliberate and
+// double-confirmed in the UI; it does not touch existing journal history.
+export async function switchOwnRole(target: "apprentice" | "host") {
+  const session = await requireSession();
+  const role = z.enum(["apprentice", "host"]).parse(target);
+  await db
+    .update(user)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(user.id, session.user.id));
+  return { role };
 }
 
 // Onboarding for accounts created via Google sign-in: they arrive with only
@@ -82,33 +115,6 @@ export async function completeProfile(input: unknown) {
     })
     .where(eq(user.id, session.user.id))
     .returning({ id: user.id });
-
-  return updated;
-}
-
-// A host may promote one of their apprentices to a host (rare, e.g. a former
-// apprentice who now supervises others). Only a host with an accepted
-// assignment for that apprentice may do this; the apprentice's journal
-// history stays on their account.
-export async function promoteApprenticeToHost(apprenticeId: string) {
-  const session = await requireSession();
-
-  const assignment = await db.query.hostAssignment.findFirst({
-    where: and(
-      eq(hostAssignment.apprenticeId, apprenticeId),
-      eq(hostAssignment.hostId, session.user.id),
-      eq(hostAssignment.status, "accepted"),
-    ),
-  });
-  if (!assignment) {
-    throw new Error("Not authorized to promote this apprentice");
-  }
-
-  const [updated] = await db
-    .update(user)
-    .set({ role: "host", updatedAt: new Date() })
-    .where(eq(user.id, apprenticeId))
-    .returning({ id: user.id, role: user.role });
 
   return updated;
 }
