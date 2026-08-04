@@ -263,6 +263,16 @@
   padding: 1rem 1.5rem 0;
 }
 
+/* The "Spot" group stacks its label, suggestion chips and free-text field
+   with breathing room, so the field's floating label never overlaps the
+   chips above it. */
+.spotGroup {
+  display: flex;
+  flex-direction: column;
+  /* Enough room that the field's floating label clears the chips above. */
+  gap: 1rem;
+}
+
 /* Project selection as one-click chips (replaces the dropdown) */
 .chipRow {
   display: flex;

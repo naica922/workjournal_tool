@@ -513,7 +513,7 @@ export function EventDialog({
           </div>
         </div>
 
-        <div>
+        <div className={styles.spotGroup}>
           <p className={`${styles.groupLabel} body-small`}>Spot (optional)</p>
           <div className={styles.chipRow}>
             {SPOT_SUGGESTIONS.map((spot) => (
