@@ -256,7 +256,9 @@ export function CalendarView({
         const project = occurrence.projectId
           ? projectById.get(occurrence.projectId)
           : undefined;
-        const color = occurrence.color ?? DEFAULT_BLOCK_COLOR;
+        // A project's colour wins so its blocks read as one group.
+        const color =
+          project?.color ?? occurrence.color ?? DEFAULT_BLOCK_COLOR;
         // Past entries fade to a pastel tint so it is clear what is done.
         const isPast = occurrence.end.getTime() < now;
         // Late = created/changed after its week's Friday 18:00 deadline.
@@ -370,12 +372,30 @@ export function CalendarView({
       // Month-view selections are all-day; give them a default 09:00-10:00
       // timed slot on the first selected day.
       if (selection.allDay) {
-        const day = new Date(selection.start);
-        day.setHours(9, 0, 0, 0);
+        // FullCalendar's all-day end is exclusive; the last included day is
+        // one day before it.
+        const startDay = new Date(selection.start);
+        const lastDay = new Date(selection.end);
+        lastDay.setDate(lastDay.getDate() - 1);
+        const spansDays = lastDay.getTime() > startDay.getTime();
+        const isMonth = selection.view.type === "dayGridMonth";
+        // A single day tapped in the month grid becomes a timed slot; the
+        // all-day row (or any multi-day drag) becomes an all-day OOO entry.
+        if (isMonth && !spansDays) {
+          const day = new Date(selection.start);
+          day.setHours(9, 0, 0, 0);
+          setDialog({
+            mode: "create",
+            start: day,
+            end: new Date(day.getTime() + 60 * 60 * 1000),
+          });
+          return;
+        }
         setDialog({
           mode: "create",
-          start: day,
-          end: new Date(day.getTime() + 60 * 60 * 1000),
+          start: startDay,
+          end: lastDay,
+          allDay: true,
         });
         return;
       }

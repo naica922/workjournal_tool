@@ -160,14 +160,12 @@ test("projects: assigned events aggregate hours in the projects view", async ({
     .fill(
       `${lastWeek.getFullYear()}-${pad(lastWeek.getMonth() + 1)}-${pad(lastWeek.getDate())}`,
     );
+  // Pick the project via its one-click chip.
   await page
-    .locator('md-outlined-select[name="projectId"]')
-    .evaluate((select: HTMLSelectElement, name) => {
-      const option = [...select.querySelectorAll("md-select-option")].find(
-        (o) => o.textContent?.includes(name),
-      ) as (Element & { value: string }) | undefined;
-      select.value = option!.value;
-    }, "Coop event");
+    .locator('button[role="radio"]', { hasText: "Coop event" })
+    .click();
+  // With a project chosen, the colour is inherited (no colour picker).
+  await expect(page.getByText(/Colour inherited from Coop event/)).toBeVisible();
   await page.locator("md-filled-button", { hasText: "Save" }).click();
   await expect(page.locator("md-dialog")).toHaveCount(0, { timeout: 15_000 });
 
