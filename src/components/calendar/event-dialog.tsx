@@ -42,6 +42,9 @@ function snapTime(value: string): string {
   return `${String(hour % 24).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
+// Quick suggestions for the specific work spot; free text is also allowed.
+const SPOT_SUGGESTIONS = ["At my desk", "8th floor", "Meeting room"];
+
 function addHour(time: string): string {
   const [h, m] = time.split(":").map(Number);
   return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
@@ -86,6 +89,7 @@ export function EventDialog({
   error,
   quick = false,
   projects = [],
+  initialDayLocation,
   onClose,
   onSave,
   onDelete,
@@ -98,8 +102,14 @@ export function EventDialog({
   // near-fullscreen sheet and must close reliably).
   quick?: boolean;
   projects?: Project[];
+  // The day-level home/office already set for this entry's date, if any.
+  initialDayLocation?: "home" | "office" | null;
   onClose: () => void;
-  onSave: (input: BlockInput, blockId?: string) => void;
+  onSave: (
+    input: BlockInput,
+    blockId?: string,
+    dayLocation?: "home" | "office",
+  ) => void;
   onDelete: (blockId: string) => void;
 }) {
   const dialogRef = useRef<MdDialog | null>(null);
@@ -109,6 +119,12 @@ export function EventDialog({
   );
   const [projectId, setProjectId] = useState<string>(block?.projectId ?? "");
   const selectedProject = projects.find((p) => p.id === projectId) ?? null;
+  const [dayLocation, setDayLocation] = useState<"home" | "office">(
+    initialDayLocation ?? "office",
+  );
+  const [locationDetail, setLocationDetail] = useState<string>(
+    block?.locationDetail ?? "",
+  );
   const [blockerEntries, setBlockerEntries] = useState<BlockerEntry[]>(
     block?.blockerEntries?.length ? block.blockerEntries : [],
   );
@@ -205,7 +221,7 @@ export function EventDialog({
       blockerEntries: blockerEntries.filter(
         (entry) => entry.blocker.trim() || entry.solutionSteps.trim(),
       ),
-      location: String(data.get("location")) as "home" | "office",
+      locationDetail: locationDetail.trim() || null,
       // A project's colour wins; a colour is only picked for project-less
       // entries.
       color: selectedProject
@@ -223,7 +239,7 @@ export function EventDialog({
       links: links.filter((link) => link.url.trim()),
     };
 
-    onSave(input, block?.id);
+    onSave(input, block?.id, dayLocation);
   }
 
   return (
@@ -403,22 +419,58 @@ export function EventDialog({
           </div>
         )}
 
-        <div className={styles.row}>
-          <md-outlined-select
-            label="Work location"
-            name="location"
-            required
-            disabled={readOnly}
-            value={block?.location ?? "office"}
-          >
-            <md-select-option value="office">
-              <div slot="headline">Office</div>
-            </md-select-option>
-            <md-select-option value="home">
-              <div slot="headline">Home office</div>
-            </md-select-option>
-          </md-outlined-select>
+        <div>
+          <p className={`${styles.groupLabel} body-small`}>
+            Work location that day
+          </p>
+          <div className={styles.chipRow} role="radiogroup" aria-label="Day location">
+            {(["office", "home"] as const).map((loc) => (
+              <button
+                key={loc}
+                type="button"
+                role="radio"
+                aria-checked={dayLocation === loc}
+                disabled={readOnly}
+                className={dayLocation === loc ? styles.chipSelected : styles.chip}
+                onClick={() => setDayLocation(loc)}
+              >
+                <md-icon class={styles.chipIcon}>
+                  {loc === "home" ? "home" : "apartment"}
+                </md-icon>
+                {loc === "home" ? "Home" : "Office"}
+              </button>
+            ))}
+          </div>
+        </div>
 
+        <div>
+          <p className={`${styles.groupLabel} body-small`}>Spot (optional)</p>
+          <div className={styles.chipRow}>
+            {SPOT_SUGGESTIONS.map((spot) => (
+              <button
+                key={spot}
+                type="button"
+                disabled={readOnly}
+                className={
+                  locationDetail === spot ? styles.chipSelected : styles.chip
+                }
+                onClick={() => setLocationDetail(spot)}
+              >
+                {spot}
+              </button>
+            ))}
+          </div>
+          <md-outlined-text-field
+            label="Where exactly"
+            value={locationDetail}
+            disabled={readOnly}
+            onInput={(e: React.FormEvent) =>
+              setLocationDetail((e.target as HTMLInputElement).value)
+            }
+          />
+        </div>
+
+        <div className={styles.row}>
           <md-outlined-select
             label="Repeats"
             name="recurrence"

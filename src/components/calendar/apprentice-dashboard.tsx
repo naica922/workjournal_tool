@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { listAllBlocks } from "@/server/blocks";
+import { listAllBlocks, listDayLocations } from "@/server/blocks";
 import { expandOccurrences } from "@/lib/recurrence";
 import { isoWeek, weekMonday } from "@/lib/week";
 import {
+  dayLocationMap,
   expectationFlags,
   lastCompletedMonday,
   weekStats,
@@ -45,9 +46,20 @@ export function ApprenticeDashboard({
     queryKey: ["all-blocks", apprenticeId],
     queryFn: () => listAllBlocks(apprenticeId),
   });
+  const { data: dayLocations } = useQuery({
+    queryKey: ["day-locations-all", apprenticeId],
+    queryFn: () =>
+      listDayLocations({
+        // A wide range covering the weeks shown.
+        start: "2000-01-01",
+        end: "2100-01-01",
+        apprenticeId,
+      }),
+  });
 
   const weeks = useMemo<WeekRow[]>(() => {
     const logBlocks = (blocks ?? []).filter((b) => b.kind === "log");
+    const dayLoc = dayLocationMap(dayLocations ?? []);
     const rows: WeekRow[] = [];
     const firstMonday = apprenticeshipStart
       ? weekMonday(new Date(`${apprenticeshipStart}T12:00:00`))
@@ -60,7 +72,7 @@ export function ApprenticeDashboard({
       const friday = new Date(monday);
       friday.setDate(friday.getDate() + 4);
       const occ = expandOccurrences(logBlocks, monday, end);
-      const stats = weekStats(occ, monday);
+      const stats = weekStats(occ, monday, dayLoc);
       rows.push({
         monday: new Date(monday),
         friday,
@@ -72,7 +84,7 @@ export function ApprenticeDashboard({
       monday.setDate(monday.getDate() - 7);
     }
     return rows;
-  }, [blocks, now, apprenticeshipStart]);
+  }, [blocks, dayLocations, now, apprenticeshipStart]);
 
   const isoDay = (d: Date) => {
     const pad = (n: number) => String(n).padStart(2, "0");

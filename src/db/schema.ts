@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -160,7 +161,10 @@ export const calendarBlock = pgTable("calendar_block", {
     .$type<BlockerEntry[]>()
     .notNull()
     .default([]),
+  // Home/office now lives per day (see dayLocation); kept for old rows.
   location: text("location", { enum: ["home", "office"] }),
+  // The specific spot for this entry, e.g. "at my desk", "8th floor".
+  locationDetail: text("location_detail"),
   color: text("color"),
   recurrence: text("recurrence", {
     enum: ["none", "daily", "weekly", "biweekly", "custom"],
@@ -174,6 +178,23 @@ export const calendarBlock = pgTable("calendar_block", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// Where the apprentice worked on a given day (set once per day; each block
+// then records only its specific spot in location_detail).
+export const dayLocation = pgTable(
+  "day_location",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    location: text("location", { enum: ["home", "office"] }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.date)],
+);
 
 // ---------------------------------------------------------------------------
 // To-dos: personal tasks with an optional deadline, description and a link to
@@ -243,4 +264,5 @@ export type Project = typeof project.$inferSelect;
 export type Todo = typeof todo.$inferSelect;
 export type TodoList = typeof todoList.$inferSelect;
 export type CalendarBlock = typeof calendarBlock.$inferSelect;
+export type DayLocation = typeof dayLocation.$inferSelect;
 export type NewCalendarBlock = typeof calendarBlock.$inferInsert;
