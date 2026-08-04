@@ -215,6 +215,7 @@ function ListColumn({
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(list.title);
   const [showDone, setShowDone] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
     <section className={styles.column} aria-label={list.title}>
@@ -252,13 +253,36 @@ function ListColumn({
             {list.title}
           </h2>
         )}
-        <md-icon-button
-          type="button"
-          aria-label="Delete list"
-          onClick={onDeleteList}
-        >
-          <md-icon>delete</md-icon>
-        </md-icon-button>
+        {confirmingDelete ? (
+          <span className={styles.confirmDelete}>
+            <span className="body-small">Delete list?</span>
+            <md-icon-button
+              type="button"
+              aria-label="Confirm delete list"
+              onClick={() => {
+                setConfirmingDelete(false);
+                onDeleteList();
+              }}
+            >
+              <md-icon class={styles.confirmYes}>check</md-icon>
+            </md-icon-button>
+            <md-icon-button
+              type="button"
+              aria-label="Cancel delete list"
+              onClick={() => setConfirmingDelete(false)}
+            >
+              <md-icon>close</md-icon>
+            </md-icon-button>
+          </span>
+        ) : (
+          <md-icon-button
+            type="button"
+            aria-label="Delete list"
+            onClick={() => setConfirmingDelete(true)}
+          >
+            <md-icon>delete</md-icon>
+          </md-icon-button>
+        )}
       </header>
 
       <AddTaskField onAdd={onAddTask} />
@@ -337,6 +361,7 @@ export function TodosView() {
   const [now] = useState(() => Date.now());
   // Local ordering mirror while dragging so moves feel instant.
   const [orderByList, setOrderByList] = useState<Record<string, string[]>>({});
+  const [newListOpen, setNewListOpen] = useState(false);
   const dragging = useRef(false);
 
   const { data: lists } = useQuery({
@@ -490,17 +515,41 @@ export function TodosView() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={`${styles.heading} headline-small`}>To-dos</h1>
-        <md-outlined-button
-          type="button"
-          onClick={() => {
-            const title = window.prompt("Name of the new list");
-            if (title && title.trim()) createListMut.mutate(title.trim());
-          }}
-        >
-          <md-icon slot="icon">add</md-icon>
-          New list
-        </md-outlined-button>
+        <div>
+          <h1 className={`${styles.heading} headline-small`}>To-dos</h1>
+          <p className={`${styles.subnote} body-small`}>
+            To-dos are just for you — they don&apos;t count toward your
+            performance reviews.
+          </p>
+        </div>
+        {newListOpen ? (
+          <input
+            className={styles.newListInput}
+            placeholder="New list name"
+            autoFocus
+            onKeyDown={(e) => {
+              const value = (e.target as HTMLInputElement).value.trim();
+              if (e.key === "Enter" && value) {
+                createListMut.mutate(value);
+                setNewListOpen(false);
+              }
+              if (e.key === "Escape") setNewListOpen(false);
+            }}
+            onBlur={(e) => {
+              const value = e.target.value.trim();
+              if (value) createListMut.mutate(value);
+              setNewListOpen(false);
+            }}
+          />
+        ) : (
+          <md-outlined-button
+            type="button"
+            onClick={() => setNewListOpen(true)}
+          >
+            <md-icon slot="icon">add</md-icon>
+            New list
+          </md-outlined-button>
+        )}
       </div>
 
       {(lists ?? []).length === 0 ? (
@@ -535,14 +584,7 @@ export function TodosView() {
                   onRename={(title) =>
                     renameListMut.mutate({ id: list.id, title })
                   }
-                  onDeleteList={() => {
-                    if (
-                      window.confirm(
-                        `Delete the list "${list.title}" and its tasks?`,
-                      )
-                    )
-                      deleteListMut.mutate(list.id);
-                  }}
+                  onDeleteList={() => deleteListMut.mutate(list.id)}
                   onAddTask={(title) =>
                     createTodoMut.mutate({ listId: list.id, title })
                   }

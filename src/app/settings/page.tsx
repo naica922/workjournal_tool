@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { ProfileHeader } from "@/components/settings/profile-header";
 import { HostsSection } from "@/components/settings/hosts-section";
+import { ExportView } from "@/components/export/export-view";
 import styles from "./settings.module.css";
 
 export const metadata = { title: "Settings" };
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
         />
         <ProfileForm profile={profile} />
         {role === "apprentice" && <HostsSection />}
+        {role === "apprentice" && <ExportView />}
       </div>
     </AppShell>
   );

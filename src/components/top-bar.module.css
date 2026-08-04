@@ -101,3 +101,19 @@
     display: inline-flex;
   }
 }
+
+/* Icon action in the top bar (e.g. Report a bug), left of the avatar */
+.barAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.barAction:hover {
+  background: var(--md-sys-color-surface-container-high);
+  text-decoration: none;
+}

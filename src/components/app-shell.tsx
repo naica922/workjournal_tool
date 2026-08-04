@@ -79,15 +79,6 @@ export function AppShell({
             </Link>
           )}
           <Link
-            href="/export"
-            className={
-              active === "export" ? styles.railLinkActive : styles.railLink
-            }
-          >
-            <md-icon>picture_as_pdf</md-icon>
-            Export
-          </Link>
-          <Link
             href="/settings"
             className={
               active === "settings" ? styles.railLinkActive : styles.railLink
@@ -98,10 +89,6 @@ export function AppShell({
           </Link>
           <MiniMonth />
           <div className={styles.railSpacer} />
-          <Link href="/report-bug" className={styles.railLinkMuted}>
-            <md-icon>bug_report</md-icon>
-            Report a bug
-          </Link>
           <SignOutButton iconOnly />
         </nav>
         <div className={styles.content}>{children}</div>
