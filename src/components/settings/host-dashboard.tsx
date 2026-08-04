@@ -151,13 +151,14 @@ export function HostDashboard() {
                   <md-icon slot="icon">download</md-icon>
                   Export
                 </md-text-button>
-                <Link href={`/apprentices/${apprentice.id}/projects`}>
-                  <md-text-button type="button">Projects</md-text-button>
-                </Link>
                 <Link href={`/apprentices/${apprentice.id}`}>
-                  <md-outlined-button type="button">
-                    Open calendar
-                  </md-outlined-button>
+                  <md-text-button type="button">Calendar</md-text-button>
+                </Link>
+                <Link href={`/apprentices/${apprentice.id}/dashboard`}>
+                  <md-filled-tonal-button type="button">
+                    <md-icon slot="icon">insights</md-icon>
+                    Inspect
+                  </md-filled-tonal-button>
                 </Link>
               </li>
               {exportingId === apprentice.id && (

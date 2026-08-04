@@ -1,0 +1,129 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 52rem;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.heading {
+  margin: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.tileLabel {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.tileValue,
+.tileValueOk,
+.tileValueFlag {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.tileValueOk {
+  color: var(--md-sys-color-tertiary);
+}
+
+.tileValueFlag {
+  color: var(--md-sys-color-error);
+}
+
+.card {
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.cardTitle {
+  margin: 0 0 0.5rem;
+}
+
+.weeks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.week {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--md-sys-color-on-surface);
+}
+
+.week:hover {
+  background: var(--md-sys-color-surface-container-high);
+  text-decoration: none;
+}
+
+.weekName {
+  display: flex;
+  flex-direction: column;
+}
+
+.weekDates {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.weekStats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.ok {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: color-mix(in srgb, #33b679 18%, white);
+  color: color-mix(in srgb, #0b8043 90%, black);
+}
+
+.flag {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--md-sys-color-error) 15%, white);
+  color: var(--md-sys-color-error);
+}
+
+.empty {
+  color: var(--md-sys-color-on-surface-variant);
+}
