@@ -29,6 +29,25 @@ export function isLateEntry(updatedAt: Date | string, occurrenceStart: Date): bo
   return updated.getTime() > fridayCutoff(occurrenceStart).getTime();
 }
 
+// ISO week number (weeks start Monday; week 1 holds the first Thursday).
+export function isoWeek(date: Date): number {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  return (
+    1 +
+    Math.round(
+      ((d.getTime() - firstThursday.getTime()) / 86400000 -
+        3 +
+        ((firstThursday.getUTCDay() + 6) % 7)) /
+        7,
+    )
+  );
+}
+
 // A stable key for grouping occurrences by week (the Monday's date).
 export function weekKey(date: Date): string {
   const monday = weekMonday(date);

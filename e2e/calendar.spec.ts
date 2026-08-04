@@ -96,7 +96,7 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
   await expect(page.getByText("E2E Apprentice")).toBeVisible();
   await page.locator("md-filled-button", { hasText: "Accept" }).click();
   await expect(
-    page.locator("md-outlined-button", { hasText: "Open calendar" }),
+    page.locator("md-filled-tonal-button", { hasText: "Inspect" }),
   ).toBeVisible();
 
   // The list flags last week's status: this apprentice logged nothing then.
@@ -114,7 +114,14 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
     /\/api\/export\?.*apprenticeId=/,
   );
 
-  await page.locator("md-outlined-button", { hasText: "Open calendar" }).click();
+  // Inspect opens the per-apprentice dashboard with recent-week stats.
+  await page.locator("md-filled-tonal-button", { hasText: "Inspect" }).click();
+  await expect(page.getByText("Recent weeks")).toBeVisible();
+  await expect(page.getByText("Hours (last week)")).toBeVisible();
+
+  await page
+    .locator("md-outlined-button", { hasText: "Open calendar" })
+    .click();
 
   await expect(page.getByRole("heading", { name: /E2E Apprentice's calendar/ })).toBeVisible();
   const event = page.locator(".fc-event", { hasText: "Visible to host" });
