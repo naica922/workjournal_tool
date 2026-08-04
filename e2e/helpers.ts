@@ -97,6 +97,27 @@ export async function dragCreateSlot(
     await page.locator(".fc-next-button").click();
     await page.waitForTimeout(300);
   }
+  // The grid loads scrolled to the current time, so 09:00 may be off-screen.
+  // First let that one-time "scroll to now" settle, then put 06:00 at the top
+  // (as the old default did) so the 09:00–10:00 slots sit mid-grid — visible
+  // and away from the edges that trigger auto-scroll during a drag-select.
+  // The scroll sticks because the calendar never re-scrolls on its own.
+  await page.waitForTimeout(600);
+  await page.evaluate(() => {
+    const scroller = [
+      ...document.querySelectorAll(".fc-timegrid .fc-scroller"),
+    ].find((s) => s.scrollHeight > s.clientHeight);
+    const lane = document.querySelector(
+      'td.fc-timegrid-slot-lane[data-time="06:00:00"]',
+    );
+    if (scroller && lane) {
+      scroller.scrollTop =
+        (lane as HTMLElement).getBoundingClientRect().top -
+        scroller.getBoundingClientRect().top +
+        scroller.scrollTop;
+    }
+  });
+  await page.waitForTimeout(200);
   const column = page.locator(".fc-timegrid-col.fc-day-tue");
   const columnBox = await column.boundingBox();
   const slotStart = page.locator('td.fc-timegrid-slot-lane[data-time="09:00:00"]');

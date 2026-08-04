@@ -211,8 +211,18 @@ export function CalendarView({
   const ownerKey = ownerId ?? "me";
   const isMobile = useIsMobile();
   const calendarRef = useRef<FullCalendar | null>(null);
+  // Guards the one-time "scroll to now" so navigating weeks doesn't re-scroll.
+  const didInitialScroll = useRef(false);
   // A single "now" for past/late checks, kept out of render impurity.
   const [now] = useState(() => Date.now());
+  // Where the grid is scrolled to on first render: the current hour (minus a
+  // little context), so a reload lands on "now". Computed once and kept
+  // constant so later re-renders (e.g. opening the create panel) never yank
+  // the grid back — the user's manual scrolling is preserved.
+  const [initialScrollTime] = useState(() => {
+    const hour = Math.max(0, new Date().getHours() - 1);
+    return `${String(hour).padStart(2, "0")}:00:00`;
+  });
   // "log" = this week's journal; "plan" = next week's high-level plan.
   const [mode, setMode] = useState<"log" | "plan">("log");
   // Ticks every 30s so the submission countdown stays live.
@@ -585,6 +595,20 @@ export function CalendarView({
     return () => clearInterval(id);
   }, []);
 
+  // Scroll the grid to the current time once, after the first load, so a
+  // reload lands on "now". Done imperatively as the last scroll (scrollTimeReset
+  // is off, so the grid never jumps back when events change afterwards).
+  useEffect(() => {
+    if (didInitialScroll.current || isPending) return;
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    didInitialScroll.current = true;
+    // Shortly after, so the timegrid scroller exists and this wins any scroll
+    // FullCalendar applied while rendering the freshly loaded events.
+    const id = setTimeout(() => api.scrollToTime(initialScrollTime), 200);
+    return () => clearTimeout(id);
+  }, [isPending, initialScrollTime]);
+
   const weekDays = useMemo(() => workweekOf(selectedDay), [selectedDay]);
   const today = new Date();
 
@@ -765,7 +789,10 @@ export function CalendarView({
           // scrolled up to 00:00 and down to the evening.
           slotMinTime="00:00:00"
           slotMaxTime="24:00:00"
-          scrollTime="06:00:00"
+          scrollTime={initialScrollTime}
+          // Don't yank the grid back to scrollTime when events change (e.g. the
+          // create draft); the initial scroll-to-now is done imperatively below.
+          scrollTimeReset={false}
           snapDuration="00:15:00"
           nowIndicator
           selectable={!readOnly}
