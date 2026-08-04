@@ -31,7 +31,7 @@ import {
 } from "@/server/blocks";
 import { listProjects } from "@/server/projects";
 import { DEFAULT_BLOCK_COLOR, type BlockInput } from "@/lib/blocks";
-import { isLateEntry } from "@/lib/week";
+import { fridayCutoff, isLateEntry } from "@/lib/week";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import { EventDialog, type DialogState } from "./event-dialog";
 import styles from "./calendar-view.module.css";
@@ -197,6 +197,10 @@ export function CalendarView({
   const calendarRef = useRef<FullCalendar | null>(null);
   // A single "now" for past/late checks, kept out of render impurity.
   const [now] = useState(() => Date.now());
+  // "log" = this week's journal; "plan" = next week's high-level plan.
+  const [mode, setMode] = useState<"log" | "plan">("log");
+  // Ticks every 30s so the submission countdown stays live.
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
@@ -217,13 +221,14 @@ export function CalendarView({
   }, [isMobile, selectedDay]);
 
   const { data, isPending } = useQuery({
-    queryKey: ["blocks", ownerKey, range?.start.toISOString()],
+    queryKey: ["blocks", ownerKey, mode, range?.start.toISOString()],
     enabled: !!range,
     queryFn: () =>
       listBlocks({
         start: range!.start.toISOString(),
         end: range!.end.toISOString(),
         apprenticeId: ownerId,
+        kind: mode,
       }),
   });
 
@@ -444,6 +449,12 @@ export function CalendarView({
     );
   }, []);
 
+  // Keep the countdown ticking (setState in a timer, not in the effect body).
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const weekDays = useMemo(() => workweekOf(selectedDay), [selectedDay]);
   const today = new Date();
 
@@ -452,6 +463,29 @@ export function CalendarView({
     next.setDate(next.getDate() + 7 * direction);
     setSelectedDay(next);
   }
+
+  // Switching mode also moves the calendar: plan is always next week.
+  function switchMode(next: "log" | "plan") {
+    setMode(next);
+    const target = new Date();
+    if (next === "plan") target.setDate(target.getDate() + 7);
+    setSelectedDay(target);
+    calendarRef.current?.getApi().gotoDate(target);
+  }
+
+  // Time left until the weekly seal (this Friday 18:00, or next if past).
+  const deadline = (() => {
+    const base = fridayCutoff(new Date(nowTick)).getTime();
+    return base > nowTick ? base : base + 7 * 24 * 60 * 60 * 1000;
+  })();
+  const msLeft = Math.max(0, deadline - nowTick);
+  const countdown = (() => {
+    const totalMin = Math.floor(msLeft / 60000);
+    const d = Math.floor(totalMin / (60 * 24));
+    const h = Math.floor((totalMin % (60 * 24)) / 60);
+    const m = totalMin % 60;
+    return d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`;
+  })();
 
   const dialogKey =
     dialog === null
@@ -463,6 +497,39 @@ export function CalendarView({
   return (
     <>
       {title && <h1 className={`${styles.heading} headline-small`}>{title}</h1>}
+
+      <div className={styles.modeBar}>
+        <div className={styles.modeToggle} role="tablist" aria-label="View">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "log"}
+            className={mode === "log" ? styles.modeActive : styles.modeButton}
+            onClick={() => switchMode("log")}
+          >
+            Log · this week
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "plan"}
+            className={mode === "plan" ? styles.modeActive : styles.modeButton}
+            onClick={() => switchMode("plan")}
+          >
+            Plan · next week
+          </button>
+        </div>
+        {!readOnly && (
+          <span className={`${styles.submitNote} body-small`}>
+            <md-icon class={styles.submitIcon}>schedule</md-icon>
+            {mode === "plan"
+              ? "Plan next week at a high level. "
+              : ""}
+            Auto-submits Friday 18:00 · {countdown} left
+          </span>
+        )}
+      </div>
+
       {isMobile && (
         <div className={styles.dayStrip}>
           <button
@@ -624,7 +691,9 @@ export function CalendarView({
           pending={saveMutation.isPending || deleteMutation.isPending}
           error={dialogError}
           onClose={closeDialog}
-          onSave={(input, blockId) => saveMutation.mutate({ input, blockId })}
+          onSave={(input, blockId) =>
+            saveMutation.mutate({ input: { ...input, kind: mode }, blockId })
+          }
           onDelete={(blockId) => deleteMutation.mutate(blockId)}
         />
       )}

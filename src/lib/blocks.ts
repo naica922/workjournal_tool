@@ -95,6 +95,7 @@ export const blockerEntrySchema = z.object({
 
 export const blockInputSchema = z
   .object({
+    kind: z.enum(["log", "plan"]).default("log"),
     title: z.string().trim().min(1, "Title is required").max(200),
     start: z.iso.datetime({ offset: true, local: true }),
     end: z.iso.datetime({ offset: true, local: true }),
@@ -141,4 +142,5 @@ export const listRangeSchema = z.object({
   start: z.iso.datetime({ offset: true, local: true }),
   end: z.iso.datetime({ offset: true, local: true }),
   apprenticeId: z.string().optional(),
+  kind: z.enum(["log", "plan"]).default("log"),
 });

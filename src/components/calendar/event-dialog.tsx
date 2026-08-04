@@ -190,6 +190,8 @@ export function EventDialog({
     setLocalError(null);
 
     const input: BlockInput = {
+      // The calendar view overrides this with the current mode (log/plan).
+      kind: "log",
       title: String(data.get("title") ?? ""),
       start: startIso,
       end: endIso,

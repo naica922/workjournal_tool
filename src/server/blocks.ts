@@ -12,9 +12,10 @@ export async function listBlocks(input: {
   start: string;
   end: string;
   apprenticeId?: string;
+  kind?: "log" | "plan";
 }): Promise<BlockOccurrence[]> {
   const session = await requireSession();
-  const { start, end, apprenticeId } = listRangeSchema.parse(input);
+  const { start, end, apprenticeId, kind } = listRangeSchema.parse(input);
   const ownerId = apprenticeId ?? session.user.id;
   await assertCanViewCalendar(session.user.id, ownerId);
 
@@ -24,6 +25,7 @@ export async function listBlocks(input: {
   const blocks = await db.query.calendarBlock.findMany({
     where: and(
       eq(calendarBlock.userId, ownerId),
+      eq(calendarBlock.kind, kind),
       // Recurring blocks must be considered regardless of their start week.
       or(
         ne(calendarBlock.recurrence, "none"),
@@ -60,6 +62,7 @@ async function assertOwnProject(userId: string, projectId: string) {
 function blockValues(data: BlockInput) {
   const isCustom = data.recurrence === "custom";
   return {
+    kind: data.kind,
     title: data.title,
     start: new Date(data.start),
     end: new Date(data.end),

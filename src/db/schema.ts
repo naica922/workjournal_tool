@@ -146,6 +146,11 @@ export const calendarBlock = pgTable("calendar_block", {
   projectId: uuid("project_id").references(() => project.id, {
     onDelete: "set null",
   }),
+  // "log" = what actually happened (the journal); "plan" = the high-level
+  // plan for the upcoming week.
+  kind: text("kind", { enum: ["log", "plan"] })
+    .notNull()
+    .default("log"),
   title: text("title").notNull(),
   start: timestamp("start", { withTimezone: true }).notNull(),
   end: timestamp("end", { withTimezone: true }).notNull(),

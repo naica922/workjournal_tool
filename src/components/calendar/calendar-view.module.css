@@ -112,3 +112,50 @@
     0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: 15;
 }
+
+/* Log/Plan mode toggle + submission note above the calendar */
+.modeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.modeToggle {
+  display: inline-flex;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.modeButton,
+.modeActive {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.4rem 1rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.modeActive {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.submitNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.submitIcon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
