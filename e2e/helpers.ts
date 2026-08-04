@@ -108,7 +108,7 @@ export async function dragCreateSlot(
   }
 
   const x = columnBox.x + columnBox.width / 2;
-  const dialog = page.locator("md-dialog");
+  const dialog = page.locator('md-dialog, aside[role="dialog"]');
 
   // The drag-select occasionally does not register; retry a couple of times.
   for (let attempt = 0; attempt < 3; attempt++) {

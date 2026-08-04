@@ -17,8 +17,11 @@ test("UC-05/UC-06: an apprentice creates a calendar block with details and sees 
   await dragCreateSlot(page, { nextWeek: true });
 
   await textField(page, "title").fill("Write IPA documentation");
-  // Blockers live in a collapsible section as blocker/solution pairs.
-  // The blockers card is open by default on desktop.
+  // Blockers live in a collapsible section as blocker/solution pairs. The
+  // card is collapsed by default (progressive disclosure), so open it first.
+  await page
+    .locator("button", { hasText: "Blockers & solutions" })
+    .click();
   await page.locator("md-text-button", { hasText: "Add blocker" }).click();
   await page
     .locator('[data-testid="blocker-0"] textarea')
@@ -55,7 +58,7 @@ test("a created block can be edited and deleted", async ({ page }) => {
 
   // Edit the title.
   await event.click();
-  await expect(page.locator("md-dialog")).toBeVisible();
+  await expect(page.locator('md-dialog, aside[role="dialog"]')).toBeVisible();
   await textField(page, "title").fill("Renamed block");
   await page.locator("md-filled-button", { hasText: "Save" }).click();
   const renamed = page.locator(".fc-event", { hasText: "Renamed block" });
@@ -63,7 +66,7 @@ test("a created block can be edited and deleted", async ({ page }) => {
 
   // Delete it.
   await renamed.click();
-  await expect(page.locator("md-dialog")).toBeVisible();
+  await expect(page.locator('md-dialog, aside[role="dialog"]')).toBeVisible();
   await page.locator("md-text-button", { hasText: "Delete" }).click();
   await expect(page.locator(".fc-event")).toHaveCount(0, { timeout: 15_000 });
 });
@@ -129,7 +132,7 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
 
   // Read-only: opening the event shows no save button.
   await event.click();
-  await expect(page.locator("md-dialog")).toBeVisible();
+  await expect(page.locator('md-dialog, aside[role="dialog"]')).toBeVisible();
   await expect(
     page.locator("md-filled-button", { hasText: "Save" }),
   ).toHaveCount(0);
@@ -167,7 +170,7 @@ test("projects: assigned events aggregate hours in the projects view", async ({
   // With a project chosen, the colour is inherited (no colour picker).
   await expect(page.getByText(/Colour inherited from Coop event/)).toBeVisible();
   await page.locator("md-filled-button", { hasText: "Save" }).click();
-  await expect(page.locator("md-dialog")).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.locator('md-dialog, aside[role="dialog"]')).toHaveCount(0, { timeout: 15_000 });
 
   // The projects view shows the invested time and the event.
   await page.getByRole("link", { name: "Projects" }).click();

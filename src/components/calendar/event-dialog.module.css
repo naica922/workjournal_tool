@@ -217,6 +217,52 @@
   flex: 1;
 }
 
+/* Non-blocking desktop side panel (Google-Calendar style): the rest of the
+   calendar stays interactive, so no backdrop and a plain fixed element. */
+.sidePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: min(27rem, 100vw);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--md-sys-color-surface);
+  border-left: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: -6px 0 28px rgb(0 0 0 / 18%);
+  overflow: hidden;
+  animation: sidePanelIn 0.18s ease-out;
+}
+
+@keyframes sidePanelIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* In the narrow panel the form is a single scrollable column. */
+.sidePanel .form {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidePanel .columns {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.sidePanel .actions {
+  margin: 0 -1.5rem;
+  padding: 1rem 1.5rem 0;
+}
+
 /* Project selection as one-click chips (replaces the dropdown) */
 .chipRow {
   display: flex;

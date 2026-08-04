@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { cloneElement, useEffect, useRef, useState } from "react";
 import type { MdDialog } from "@material/web/dialog/dialog";
 import {
   BLOCK_COLORS,
@@ -113,6 +113,12 @@ export function EventDialog({
   onDelete: (blockId: string) => void;
 }) {
   const dialogRef = useRef<MdDialog | null>(null);
+  // Desktop shows a non-blocking side panel; mobile keeps the sheet dialog.
+  const isPanel = !quick;
+  const close = () => {
+    if (isPanel) onClose();
+    else dialogRef.current?.close();
+  };
   const block = state.mode === "edit" ? state.occurrence : null;
   const [color, setColor] = useState<string>(
     block?.color ?? DEFAULT_BLOCK_COLOR,
@@ -157,10 +163,12 @@ export function EventDialog({
   }
 
   useEffect(() => {
+    // The side panel is a plain element; only the mobile sheet needs the
+    // md-dialog show/lock lifecycle.
+    if (isPanel) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
     dialog.show();
-    // The page behind the dialog must not scroll while it is open.
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const handleClosed = () => onClose();
@@ -169,7 +177,7 @@ export function EventDialog({
       dialog.removeEventListener("closed", handleClosed);
       document.body.style.overflow = previousOverflow;
     };
-  }, [onClose]);
+  }, [onClose, isPanel]);
 
   function updateEntry(
     index: number,
@@ -242,27 +250,24 @@ export function EventDialog({
     onSave(input, block?.id, dayLocation);
   }
 
-  return (
-    <md-dialog ref={dialogRef} quick={quick || undefined} class={styles.dialog}>
-      <div slot="headline" className={styles.headline}>
-        <span>
-          {readOnly
-            ? "Journal entry"
-            : block
-              ? "Edit journal entry"
-              : "New journal entry"}
-        </span>
-        <md-icon-button
-          type="button"
-          title="Close"
-          onClick={() => dialogRef.current?.close()}
-        >
-          <md-icon>close</md-icon>
-        </md-icon-button>
-      </div>
+  const headline = (
+    <div className={styles.headline}>
+      <span>
+        {readOnly
+          ? "Journal entry"
+          : block
+            ? "Edit journal entry"
+            : "New journal entry"}
+      </span>
+      <md-icon-button type="button" title="Close" onClick={close}>
+        <md-icon>close</md-icon>
+      </md-icon-button>
+    </div>
+  );
+
+  const body = (
       <form
         id="event-form"
-        slot="content"
         className={styles.form}
         onSubmit={handleSubmit}
         onKeyDown={(e) => {
@@ -565,7 +570,7 @@ export function EventDialog({
         <Expandable
           label="Blockers & solutions"
           badge={blockerEntries.length}
-          defaultOpen={!quick}
+          defaultOpen={false}
         >
           {blockerEntries.map((entry, index) => (
             <div key={index} className={styles.blockerPair}>
@@ -639,7 +644,7 @@ export function EventDialog({
         <Expandable
           label="Links & more"
           badge={links.length}
-          defaultOpen={!quick}
+          defaultOpen={false}
         >
           {links.map((link, index) => (
             <div key={index} className={styles.linkRow}>
@@ -722,7 +727,10 @@ export function EventDialog({
           <p className={`${styles.error} body-medium`}>{localError || error}</p>
         )}
       </form>
-      <div slot="actions" className={styles.actions}>
+  );
+
+  const footer = (
+      <div className={styles.actions}>
         {!readOnly && block && (
           <md-text-button
             type="button"
@@ -733,7 +741,7 @@ export function EventDialog({
           </md-text-button>
         )}
         <div className={styles.actionsSpacer} />
-        <md-text-button type="button" onClick={() => dialogRef.current?.close()}>
+        <md-text-button type="button" onClick={close}>
           {readOnly ? "Close" : "Cancel"}
         </md-text-button>
         {!readOnly && (
@@ -750,6 +758,28 @@ export function EventDialog({
           </md-filled-button>
         )}
       </div>
+  );
+
+  if (isPanel) {
+    return (
+      <aside
+        className={styles.sidePanel}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Journal entry"
+      >
+        {headline}
+        {body}
+        {footer}
+      </aside>
+    );
+  }
+
+  return (
+    <md-dialog ref={dialogRef} quick={quick || undefined} class={styles.dialog}>
+      {cloneElement(headline, { slot: "headline" })}
+      {cloneElement(body, { slot: "content" })}
+      {cloneElement(footer, { slot: "actions" })}
     </md-dialog>
   );
 }
