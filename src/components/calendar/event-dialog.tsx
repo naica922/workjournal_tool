@@ -13,7 +13,7 @@ import type { BlockOccurrence } from "@/lib/recurrence";
 import styles from "./event-dialog.module.css";
 
 export type DialogState =
-  | { mode: "create"; start: Date; end: Date }
+  | { mode: "create"; start: Date; end: Date; allDay?: boolean }
   | { mode: "edit"; occurrence: BlockOccurrence };
 
 function toDateInput(d: Date) {
@@ -107,10 +107,14 @@ export function EventDialog({
   const [color, setColor] = useState<string>(
     block?.color ?? DEFAULT_BLOCK_COLOR,
   );
+  const [projectId, setProjectId] = useState<string>(block?.projectId ?? "");
+  const selectedProject = projects.find((p) => p.id === projectId) ?? null;
   const [blockerEntries, setBlockerEntries] = useState<BlockerEntry[]>(
     block?.blockerEntries?.length ? block.blockerEntries : [],
   );
-  const [allDay, setAllDay] = useState<boolean>(block?.allDay ?? false);
+  const [allDay, setAllDay] = useState<boolean>(
+    block?.allDay ?? (state.mode === "create" ? (state.allDay ?? false) : false),
+  );
   const [recurrence, setRecurrence] = useState<BlockInput["recurrence"]>(
     block?.recurrence ?? "none",
   );
@@ -197,12 +201,16 @@ export function EventDialog({
       end: endIso,
       allDay,
       description: String(data.get("description") ?? "") || undefined,
-      projectId: String(data.get("projectId") ?? "") || null,
+      projectId: projectId || null,
       blockerEntries: blockerEntries.filter(
         (entry) => entry.blocker.trim() || entry.solutionSteps.trim(),
       ),
       location: String(data.get("location")) as "home" | "office",
-      color,
+      // A project's colour wins; a colour is only picked for project-less
+      // entries.
+      color: selectedProject
+        ? (selectedProject.color as BlockInput["color"])
+        : color,
       recurrence,
       recurrenceInterval:
         recurrence === "custom"
@@ -348,28 +356,54 @@ export function EventDialog({
           value={block?.description ?? ""}
         />
 
-        <div className={styles.row}>
-          <md-outlined-select
-            label="Project"
-            name="projectId"
-            disabled={readOnly}
-            value={block?.projectId ?? ""}
-          >
-            <md-select-option value="">
-              <div slot="headline">No project</div>
-            </md-select-option>
-            {projects.map((p) => (
-              <md-select-option key={p.id} value={p.id}>
-                <div slot="headline">{p.name}</div>
-                {p.icon && (
-                  <md-icon slot="start" style={{ color: p.color }}>
-                    {p.icon}
-                  </md-icon>
-                )}
-              </md-select-option>
-            ))}
-          </md-outlined-select>
+        {projects.length > 0 && (
+          <div>
+            <p className={`${styles.groupLabel} body-small`}>Project</p>
+            <div
+              className={styles.chipRow}
+              role="radiogroup"
+              aria-label="Project"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!projectId}
+                disabled={readOnly}
+                className={!projectId ? styles.chipSelected : styles.chip}
+                onClick={() => setProjectId("")}
+              >
+                No project
+              </button>
+              {projects.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={projectId === p.id}
+                  disabled={readOnly}
+                  className={
+                    projectId === p.id ? styles.chipSelected : styles.chip
+                  }
+                  onClick={() => setProjectId(p.id)}
+                >
+                  {p.icon ? (
+                    <md-icon class={styles.chipIcon} style={{ color: p.color }}>
+                      {p.icon}
+                    </md-icon>
+                  ) : (
+                    <span
+                      className={styles.chipDot}
+                      style={{ background: p.color }}
+                    />
+                  )}
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
+        <div className={styles.row}>
           <md-outlined-select
             label="Work location"
             name="location"
@@ -442,27 +476,37 @@ export function EventDialog({
           </div>
         )}
 
-        <div>
-          <p className={`${styles.groupLabel} body-small`}>Color</p>
-          <div className={styles.colorGroup} role="radiogroup" aria-label="Color">
-            {BLOCK_COLORS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                role="radio"
-                aria-checked={color === c.value}
-                aria-label={c.name}
-                title={c.name}
-                disabled={readOnly}
-                className={
-                  color === c.value ? styles.swatchSelected : styles.swatch
-                }
-                style={{ background: c.value }}
-                onClick={() => setColor(c.value)}
-              />
-            ))}
+        {selectedProject ? (
+          <p className={`${styles.groupLabel} body-small`}>
+            Colour inherited from {selectedProject.name}
+          </p>
+        ) : (
+          <div>
+            <p className={`${styles.groupLabel} body-small`}>Color</p>
+            <div
+              className={styles.colorGroup}
+              role="radiogroup"
+              aria-label="Color"
+            >
+              {BLOCK_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={color === c.value}
+                  aria-label={c.name}
+                  title={c.name}
+                  disabled={readOnly}
+                  className={
+                    color === c.value ? styles.swatchSelected : styles.swatch
+                  }
+                  style={{ background: c.value }}
+                  onClick={() => setColor(c.value)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
           </div>
 
           <div className={styles.column}>
