@@ -90,6 +90,8 @@ export function EventDialog({
   quick = false,
   projects = [],
   initialDayLocation,
+  draft,
+  onDraftChange,
   onClose,
   onSave,
   onDelete,
@@ -104,6 +106,11 @@ export function EventDialog({
   projects?: Project[];
   // The day-level home/office already set for this entry's date, if any.
   initialDayLocation?: "home" | "office" | null;
+  // A live "draft" on the grid whose time this panel edits (create mode on
+  // desktop). When present, the date/time fields are controlled by it, so
+  // dragging/resizing the draft on the calendar and editing here stay in sync.
+  draft?: { start: Date; end: Date; allDay: boolean } | null;
+  onDraftChange?: (draft: { start: Date; end: Date; allDay: boolean }) => void;
   onClose: () => void;
   onSave: (
     input: BlockInput,
@@ -134,7 +141,7 @@ export function EventDialog({
   const [blockerEntries, setBlockerEntries] = useState<BlockerEntry[]>(
     block?.blockerEntries?.length ? block.blockerEntries : [],
   );
-  const [allDay, setAllDay] = useState<boolean>(
+  const [allDayI, setAllDayI] = useState<boolean>(
     block?.allDay ?? (state.mode === "create" ? (state.allDay ?? false) : false),
   );
   const [recurrence, setRecurrence] = useState<BlockInput["recurrence"]>(
@@ -146,19 +153,77 @@ export function EventDialog({
   const start = state.mode === "edit" ? state.occurrence.start : state.start;
   const end = state.mode === "edit" ? state.occurrence.end : state.end;
 
-  const [date, setDate] = useState(toDateInput(start));
-  const [endDate, setEndDate] = useState(toDateInput(end));
-  const [startTime, setStartTime] = useState(snapTime(toTimeInput(start)));
-  const [endTime, setEndTime] = useState(snapTime(toTimeInput(end)));
+  const [dateI, setDateI] = useState(toDateInput(start));
+  const [endDateI, setEndDateI] = useState(toDateInput(end));
+  const [startTimeI, setStartTimeI] = useState(snapTime(toTimeInput(start)));
+  const [endTimeI, setEndTimeI] = useState(snapTime(toTimeInput(end)));
+
+  // When a live grid draft drives the time (desktop create), the fields are
+  // controlled by it; otherwise they use the internal state above.
+  const controlled = !!draft && !!onDraftChange;
+
+  // Combine a "YYYY-MM-DD" date and "HH:MM" time into a local Date.
+  const combine = (d: string, t: string) => new Date(`${d}T${t}:00`);
+  // The all-day "To" field shows the last included day; storage is exclusive,
+  // so the stored end is one day past it.
+  const exclusiveEnd = (lastDay: string) => {
+    const d = new Date(`${lastDay}T00:00:00`);
+    d.setDate(d.getDate() + 1);
+    return d;
+  };
+
+  const allDay = controlled && draft ? draft.allDay : allDayI;
+  const date = controlled && draft ? toDateInput(draft.start) : dateI;
+  const endDate =
+    controlled && draft
+      ? toDateInput(
+          draft.allDay
+            ? new Date(draft.end.getTime() - 24 * 60 * 60 * 1000)
+            : draft.end,
+        )
+      : endDateI;
+  const startTime =
+    controlled && draft ? snapTime(toTimeInput(draft.start)) : startTimeI;
+  const endTime =
+    controlled && draft ? snapTime(toTimeInput(draft.end)) : endTimeI;
+
+  const setDate = (v: string) => {
+    if (!draft || !onDraftChange) return setDateI(v);
+    if (allDay) {
+      onDraftChange({ start: combine(v, "00:00"), end: exclusiveEnd(endDate), allDay: true });
+    } else {
+      onDraftChange({ start: combine(v, startTime), end: combine(v, endTime), allDay: false });
+    }
+  };
+  const setEndDate = (v: string) => {
+    if (!draft || !onDraftChange) return setEndDateI(v);
+    onDraftChange({ start: combine(date, "00:00"), end: exclusiveEnd(v), allDay: true });
+  };
+  const setStartTime = (v: string) => {
+    if (!draft || !onDraftChange) return setStartTimeI(v);
+    onDraftChange({ start: combine(date, v), end: combine(date, endTime), allDay: false });
+  };
+  const setEndTime = (v: string) => {
+    if (!draft || !onDraftChange) return setEndTimeI(v);
+    onDraftChange({ start: combine(date, startTime), end: combine(date, v), allDay: false });
+  };
 
   // Switching an all-day event to a timed one: if the derived times collapse
   // to the same value (00:00-00:00), pick a sensible one-hour slot instead.
   function handleAllDayChange(checked: boolean) {
-    setAllDay(checked);
+    if (draft && onDraftChange) {
+      if (checked) {
+        onDraftChange({ start: combine(date, "00:00"), end: exclusiveEnd(date), allDay: true });
+      } else {
+        onDraftChange({ start: combine(date, "09:00"), end: combine(date, "10:00"), allDay: false });
+      }
+      return;
+    }
+    setAllDayI(checked);
     if (!checked && startTime === endTime) {
       const newStart = startTime === "00:00" ? "09:00" : startTime;
-      setStartTime(newStart);
-      setEndTime(addHour(newStart));
+      setStartTimeI(newStart);
+      setEndTimeI(addHour(newStart));
     }
   }
 

@@ -218,3 +218,50 @@ test("drag reschedules an event", async ({ page }) => {
     timeout: 15_000,
   });
 });
+
+test("create shows a live draft that syncs with the side panel", async ({
+  page,
+}) => {
+  const email = uniqueEmail("apprentice");
+  await register(page, { name: "E2E Apprentice", email });
+
+  // Drag-select opens the non-blocking panel and drops a live draft on the
+  // grid (dashed outline) at Tuesday 09:00–10:30.
+  await dragCreateSlot(page);
+  const draftEvent = page.locator(".fc-event.wj-draft");
+  await expect(draftEvent).toBeVisible();
+  await expect(draftEvent).toContainText("09:00 – 10:30");
+
+  // Panel -> grid: changing the end time in the panel resizes the draft.
+  await page.locator('label:has-text("To") select').selectOption("11:00");
+  await expect(draftEvent).toContainText("09:00 – 11:00");
+
+  // Grid -> panel: dragging the draft down by an hour updates the panel time.
+  const slot9 = await page
+    .locator('td.fc-timegrid-slot-lane[data-time="09:00:00"]')
+    .boundingBox();
+  const slot10 = await page
+    .locator('td.fc-timegrid-slot-lane[data-time="10:00:00"]')
+    .boundingBox();
+  const hourPx = slot10!.y - slot9!.y;
+  const box = await draftEvent.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + 6);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + 6 + hourPx, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  await expect(page.locator('label:has-text("From") select')).toHaveValue(
+    /10:(00|15)/,
+    { timeout: 15_000 },
+  );
+
+  // Saving turns the draft into a real event (the dashed draft disappears).
+  await textField(page, "title").fill("Drafted block");
+  await page.locator("md-filled-button", { hasText: "Save" }).click();
+  const saved = page.locator(".fc-event:not(.fc-event-mirror)", {
+    hasText: "Drafted block",
+  });
+  await expect(saved).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".fc-event.wj-draft")).toHaveCount(0);
+});

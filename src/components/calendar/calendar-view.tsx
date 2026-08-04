@@ -173,6 +173,10 @@ function isSameDay(a: Date, b: Date) {
 
 const MOBILE_QUERY = "(max-width: 700px)";
 
+// Id of the live "draft" event shown on the grid while creating an entry, so
+// it can be dragged/resized before it is saved (Google-Calendar style).
+const DRAFT_ID = "__wj_draft__";
+
 function useIsMobile() {
   return useSyncExternalStore(
     (onChange) => {
@@ -216,6 +220,13 @@ export function CalendarView({
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
+  // The live, still-unsaved entry shown on the grid during creation on
+  // desktop, so it can be dragged/resized while the side panel is open.
+  const [draft, setDraft] = useState<{
+    start: Date;
+    end: Date;
+    allDay: boolean;
+  } | null>(null);
 
   // Mobile always shows the single-day view; desktop keeps whatever view the
   // user picked (week or month) and only resets when coming from mobile.
@@ -280,9 +291,8 @@ export function CalendarView({
     return map;
   }, [data]);
 
-  const events = useMemo(
-    () =>
-      (data ?? []).map((occurrence) => {
+  const events = useMemo(() => {
+    const base = (data ?? []).map((occurrence) => {
         const project = occurrence.projectId
           ? projectById.get(occurrence.projectId)
           : undefined;
@@ -323,9 +333,33 @@ export function CalendarView({
               .filter(Boolean),
           },
         };
-      }),
-    [data, projectById, now, dayLocByDate],
-  );
+      });
+
+    // The live draft (desktop create) rides along as an editable event so it
+    // can be dragged/resized on the grid before it is saved.
+    if (draft) {
+      base.push({
+        id: DRAFT_ID,
+        title: mode === "plan" ? "New plan entry" : "New entry",
+        start: draft.start,
+        end: draft.end,
+        allDay: draft.allDay,
+        backgroundColor: DEFAULT_BLOCK_COLOR,
+        borderColor: "transparent",
+        classNames: ["wj-draft"],
+        extendedProps: {
+          dayLocation: null,
+          locationDetail: null,
+          projectName: null,
+          projectIcon: null,
+          projectColor: null,
+          isLate: false,
+          links: [],
+        },
+      });
+    }
+    return base;
+  }, [data, projectById, now, dayLocByDate, draft, mode]);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["blocks", ownerKey] });
@@ -340,8 +374,26 @@ export function CalendarView({
   const closeDialog = useCallback(() => {
     setDialog(null);
     setDialogError(null);
+    setDraft(null);
     clearSelection();
   }, [clearSelection]);
+
+  // Start creating an entry. On desktop, timed creates also drop a live draft
+  // event on the grid so it can be dragged/resized while the panel is open;
+  // all-day and mobile creates keep the plain dialog with no grid draft.
+  const beginCreate = useCallback(
+    (slot: { start: Date; end: Date; allDay?: boolean }) => {
+      setDialogError(null);
+      setDialog({ mode: "create", ...slot });
+      if (!isMobile && !slot.allDay) {
+        setDraft({ start: slot.start, end: slot.end, allDay: false });
+        clearSelection();
+      } else {
+        setDraft(null);
+      }
+    },
+    [isMobile, clearSelection],
+  );
 
   const saveMutation = useMutation({
     mutationFn: async ({
@@ -366,6 +418,7 @@ export function CalendarView({
       invalidate();
       setDialog(null);
       setDialogError(null);
+      setDraft(null);
       clearSelection();
     },
     onError: (error: Error) => setDialogError(error.message),
@@ -377,6 +430,7 @@ export function CalendarView({
       invalidate();
       setDialog(null);
       setDialogError(null);
+      setDraft(null);
     },
     onError: (error: Error) => setDialogError(error.message),
   });
@@ -400,6 +454,15 @@ export function CalendarView({
   // shift the underlying block by the delta. Recurring series move together.
   const handleEventChange = useCallback(
     (info: EventDropArg | EventResizeDoneArg) => {
+      // Dragging/resizing the live draft just updates the pending times; it is
+      // not a saved block yet, so it must not be reverted.
+      if (info.event.id === DRAFT_ID) {
+        const start = info.event.start ?? new Date();
+        const end =
+          info.event.end ?? new Date(start.getTime() + 60 * 60 * 1000);
+        setDraft({ start, end, allDay: info.event.allDay });
+        return;
+      }
       const occurrence = occurrences.get(info.event.id);
       if (!occurrence) {
         info.revert();
@@ -421,7 +484,6 @@ export function CalendarView({
   const handleSelect = useCallback(
     (selection: DateSelectArg) => {
       if (readOnly) return;
-      setDialogError(null);
       // Month-view selections are all-day; give them a default 09:00-10:00
       // timed slot on the first selected day.
       if (selection.allDay) {
@@ -437,24 +499,15 @@ export function CalendarView({
         if (isMonth && !spansDays) {
           const day = new Date(selection.start);
           day.setHours(9, 0, 0, 0);
-          setDialog({
-            mode: "create",
-            start: day,
-            end: new Date(day.getTime() + 60 * 60 * 1000),
-          });
+          beginCreate({ start: day, end: new Date(day.getTime() + 60 * 60 * 1000) });
           return;
         }
-        setDialog({
-          mode: "create",
-          start: startDay,
-          end: lastDay,
-          allDay: true,
-        });
+        beginCreate({ start: startDay, end: lastDay, allDay: true });
         return;
       }
-      setDialog({ mode: "create", start: selection.start, end: selection.end });
+      beginCreate({ start: selection.start, end: selection.end });
     },
-    [readOnly],
+    [readOnly, beginCreate],
   );
 
   // A tap on mobile, or a click on a day in month view, creates a one-hour
@@ -463,18 +516,13 @@ export function CalendarView({
     (click: DateClickArg) => {
       if (readOnly) return;
       if (!isMobile && click.view.type !== "dayGridMonth") return;
-      setDialogError(null);
       const start = new Date(click.date);
       if (click.allDay) {
         start.setHours(9, 0, 0, 0);
       }
-      setDialog({
-        mode: "create",
-        start,
-        end: new Date(start.getTime() + 60 * 60 * 1000),
-      });
+      beginCreate({ start, end: new Date(start.getTime() + 60 * 60 * 1000) });
     },
-    [readOnly, isMobile],
+    [readOnly, isMobile, beginCreate],
   );
 
   const handleEventClick = useCallback(
@@ -482,6 +530,7 @@ export function CalendarView({
       const occurrence = occurrences.get(click.event.id);
       if (!occurrence) return;
       setDialogError(null);
+      setDraft(null);
       setDialog({ mode: "edit", occurrence });
     },
     [occurrences],
@@ -490,13 +539,10 @@ export function CalendarView({
   // The sidebar "Create" button dispatches this event (see CreateEventButton).
   useEffect(() => {
     if (readOnly) return;
-    const handleCreate = () => {
-      setDialogError(null);
-      setDialog({ mode: "create", ...defaultCreateSlot() });
-    };
+    const handleCreate = () => beginCreate(defaultCreateSlot());
     window.addEventListener("workjournal:create", handleCreate);
     return () => window.removeEventListener("workjournal:create", handleCreate);
-  }, [readOnly]);
+  }, [readOnly, beginCreate]);
 
   // The sidebar mini month emits this; jump the main calendar there.
   useEffect(() => {
@@ -746,10 +792,7 @@ export function CalendarView({
           type="button"
           className={styles.fab}
           aria-label="Create journal entry"
-          onClick={() => {
-            setDialogError(null);
-            setDialog({ mode: "create", ...defaultCreateSlot(selectedDay) });
-          }}
+          onClick={() => beginCreate(defaultCreateSlot(selectedDay))}
         >
           <md-icon>add</md-icon>
         </button>
@@ -768,6 +811,8 @@ export function CalendarView({
               dialog.mode === "edit" ? dialog.occurrence.start : dialog.start,
             ),
           )}
+          draft={dialog.mode === "create" ? draft : null}
+          onDraftChange={setDraft}
           onClose={closeDialog}
           onSave={(input, blockId, dayLocation) =>
             saveMutation.mutate({
