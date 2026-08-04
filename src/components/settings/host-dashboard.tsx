@@ -7,11 +7,33 @@ import {
   acceptInvite,
   declineInvite,
   listMyInvites,
-  listMyApprentices,
 } from "@/server/settings";
+import { listApprenticeSummaries } from "@/server/stats";
 import { apprenticeshipYear } from "@/lib/apprenticeship";
+import { expandOccurrences } from "@/lib/recurrence";
+import {
+  expectationFlags,
+  lastCompletedMonday,
+  weekStats,
+} from "@/lib/stats";
 import { ExportView } from "@/components/export/export-view";
 import styles from "@/app/settings/settings.module.css";
+
+// Last completed week's stats + flags for one apprentice (computed in local
+// time from the recent log blocks the server returned).
+function apprenticeWeekStatus(blocks: Parameters<typeof expandOccurrences>[0]) {
+  const monday = lastCompletedMonday(new Date());
+  const end = new Date(monday);
+  end.setDate(end.getDate() + 7);
+  const occ = expandOccurrences(blocks, monday, end);
+  const stats = weekStats(occ, monday);
+  return { monday, stats, flags: expectationFlags(stats) };
+}
+
+const weekFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "short",
+});
 
 // Host view: accept or decline invitations and open apprentice calendars.
 export function HostDashboard() {
@@ -25,7 +47,7 @@ export function HostDashboard() {
   });
   const { data: apprentices } = useQuery({
     queryKey: ["my-apprentices"],
-    queryFn: () => listMyApprentices(),
+    queryFn: () => listApprenticeSummaries(),
   });
 
   const invalidate = () => {
@@ -84,7 +106,11 @@ export function HostDashboard() {
           Apprentices with access
         </h2>
         <ul className={styles.list}>
-          {(apprentices ?? []).map((apprentice) => (
+          {(apprentices ?? []).map((apprentice) => {
+            const { monday, stats, flags } = apprenticeWeekStatus(
+              apprentice.blocks,
+            );
+            return (
             <Fragment key={apprentice.assignmentId}>
               <li className={styles.listItem}>
                 <span className={`${styles.listItemText} body-medium`}>
@@ -95,6 +121,23 @@ export function HostDashboard() {
                     {apprentice.apprenticeshipStart &&
                       ` · Year ${apprenticeshipYear(apprentice.apprenticeshipStart)}`}
                     {apprentice.team && ` · ${apprentice.team}`}
+                  </span>
+                  <span className={styles.weekStatus}>
+                    <span className={`${styles.listItemSub} body-small`}>
+                      Week of {weekFmt.format(monday)}: {stats.hours.toFixed(0)} h
+                      {" · "}
+                      {stats.entries}{" "}
+                      {stats.entries === 1 ? "entry" : "entries"}
+                    </span>
+                    {flags.length === 0 ? (
+                      <span className={styles.statusOk}>On track</span>
+                    ) : (
+                      flags.map((flag) => (
+                        <span key={flag} className={styles.statusFlag}>
+                          {flag}
+                        </span>
+                      ))
+                    )}
                   </span>
                 </span>
                 <md-text-button
@@ -126,7 +169,8 @@ export function HostDashboard() {
                 </li>
               )}
             </Fragment>
-          ))}
+          );
+          })}
           {apprentices?.length === 0 && (
             <li className={`${styles.empty} body-medium`}>
               No apprentices yet. Ask your apprentices to add your email address in
