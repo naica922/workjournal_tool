@@ -244,3 +244,30 @@
   --md-outlined-button-outline-color: var(--md-sys-color-error);
   --md-filled-button-container-color: var(--md-sys-color-error);
 }
+
+/* Host apprentice list: last week's status + expectation flags */
+.weekStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.statusOk {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: color-mix(in srgb, #33b679 18%, white);
+  color: color-mix(in srgb, #0b8043 90%, black);
+}
+
+.statusFlag {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--md-sys-color-error) 15%, white);
+  color: var(--md-sys-color-error);
+}

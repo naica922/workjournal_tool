@@ -99,6 +99,9 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
     page.locator("md-outlined-button", { hasText: "Open calendar" }),
   ).toBeVisible();
 
+  // The list flags last week's status: this apprentice logged nothing then.
+  await expect(page.getByText(/Under 40 h/)).toBeVisible();
+
   // The host can export this apprentice's journal from the list.
   await page.locator("md-text-button", { hasText: "Export" }).click();
   await expect(
