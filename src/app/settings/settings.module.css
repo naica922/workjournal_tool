@@ -271,3 +271,13 @@
   background: color-mix(in srgb, var(--md-sys-color-error) 15%, white);
   color: var(--md-sys-color-error);
 }
+
+/* Host's per-apprentice "daily submission" switch in the access list. */
+.dailyToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+}

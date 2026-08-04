@@ -22,11 +22,43 @@ export function fridayCutoff(date: Date): Date {
   return friday;
 }
 
-// An entry is late if it was created/changed after its week's seal deadline.
-export function isLateEntry(updatedAt: Date | string, occurrenceStart: Date): boolean {
+// 18:00 on the day of `date` — the daily seal deadline used when a host
+// requires daily submission.
+export function dailyCutoff(date: Date): Date {
+  const day = new Date(date);
+  day.setHours(SEAL_HOUR, 0, 0, 0);
+  return day;
+}
+
+// An entry is late if it was created/changed after its seal deadline. That
+// deadline is its day's 18:00 when daily submission is required, otherwise its
+// week's Friday 18:00.
+export function isLateEntry(
+  updatedAt: Date | string,
+  occurrenceStart: Date,
+  daily = false,
+): boolean {
   const updated =
     updatedAt instanceof Date ? updatedAt : new Date(updatedAt);
-  return updated.getTime() > fridayCutoff(occurrenceStart).getTime();
+  const cutoff = daily
+    ? dailyCutoff(occurrenceStart)
+    : fridayCutoff(occurrenceStart);
+  return updated.getTime() > cutoff.getTime();
+}
+
+// The next daily seal deadline from `now`: today 18:00 if that is still
+// ahead and today is a workday, otherwise 18:00 on the next workday
+// (weekends roll to Monday).
+export function nextDailyDeadline(now: Date): Date {
+  const candidate = dailyCutoff(now);
+  const isWorkday = (d: Date) => d.getDay() >= 1 && d.getDay() <= 5;
+  if (isWorkday(now) && candidate.getTime() > now.getTime()) {
+    return candidate;
+  }
+  do {
+    candidate.setDate(candidate.getDate() + 1);
+  } while (!isWorkday(candidate));
+  return candidate;
 }
 
 // ISO week number (weeks start Monday; week 1 holds the first Thursday).

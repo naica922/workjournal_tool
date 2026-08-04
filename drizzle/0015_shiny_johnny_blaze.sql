@@ -1,0 +1,1 @@
+ALTER TABLE "host_assignment" ADD COLUMN "daily_submission" boolean DEFAULT false NOT NULL;

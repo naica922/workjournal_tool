@@ -263,6 +263,82 @@
   padding: 1rem 1.5rem 0;
 }
 
+/* Host's read-only entry summary: labelled rows with a leading icon. */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.detailRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.detailIcon {
+  color: var(--md-sys-color-primary);
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.detailBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.detailLabel {
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0;
+}
+
+.detailValue {
+  color: var(--md-sys-color-on-surface);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detailProject {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.detailBlockers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.detailBlocker {
+  border-left: 3px solid var(--md-sys-color-outline-variant);
+  padding-left: 0.6rem;
+}
+
+.detailBlocker p {
+  margin: 0;
+}
+
+.detailSolution {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.detailLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.detailLink {
+  color: var(--md-sys-color-primary);
+  word-break: break-all;
+}
+
 /* The "Spot" group stacks its label, suggestion chips and free-text field
    with breathing room, so the field's floating label never overlaps the
    chips above it. */

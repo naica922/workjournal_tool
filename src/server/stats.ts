@@ -19,6 +19,8 @@ export type ApprenticeSummary = {
   email: string;
   apprenticeshipStart: string | null;
   team: string | null;
+  // Whether this host requires the apprentice to submit their journal daily.
+  dailySubmission: boolean;
   // Recent log blocks (recurring, or ending within the last ~5 weeks) so the
   // client can compute last week's stats in local time.
   blocks: CalendarBlock[];
@@ -37,6 +39,7 @@ export async function listApprenticeSummaries(): Promise<ApprenticeSummary[]> {
       email: user.email,
       apprenticeshipStart: user.apprenticeshipStart,
       team: user.team,
+      dailySubmission: hostAssignment.dailySubmission,
     })
     .from(hostAssignment)
     .innerJoin(user, eq(user.id, hostAssignment.apprenticeId))

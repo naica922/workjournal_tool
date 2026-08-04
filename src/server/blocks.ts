@@ -6,6 +6,7 @@ import { db } from "@/db";
 import {
   calendarBlock,
   dayLocation,
+  hostAssignment,
   project,
   type CalendarBlock,
   type DayLocation,
@@ -90,6 +91,24 @@ export async function setDayLocation(
       set: { location: loc, updatedAt: new Date() },
     });
   return { date: day, location: loc };
+}
+
+// Whether the calendar owner must submit daily (any accepted host set the
+// flag). Drives the sterner countdown and per-day late flagging.
+export async function isDailySubmissionRequired(
+  apprenticeId?: string,
+): Promise<boolean> {
+  const session = await requireSession();
+  const ownerId = apprenticeId ?? session.user.id;
+  await assertCanViewCalendar(session.user.id, ownerId);
+  const assignment = await db.query.hostAssignment.findFirst({
+    where: and(
+      eq(hostAssignment.apprenticeId, ownerId),
+      eq(hostAssignment.status, "accepted"),
+      eq(hostAssignment.dailySubmission, true),
+    ),
+  });
+  return !!assignment;
 }
 
 // A block may only reference a project of the same user.

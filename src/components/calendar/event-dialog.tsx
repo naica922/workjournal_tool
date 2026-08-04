@@ -45,6 +45,43 @@ function snapTime(value: string): string {
 // Quick suggestions for the specific work spot; free text is also allowed.
 const SPOT_SUGGESTIONS = ["At my desk", "8th floor", "Meeting room"];
 
+const LOCATION_LABEL: Record<"home" | "office", string> = {
+  home: "Home",
+  office: "Office",
+};
+
+const detailDateFmt = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+});
+const detailTimeFmt = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+// One labelled line in the host's read-only entry view.
+function DetailRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={styles.detailRow}>
+      <md-icon class={styles.detailIcon}>{icon}</md-icon>
+      <div className={styles.detailBody}>
+        <p className={`${styles.detailLabel} body-small`}>{label}</p>
+        <div className={styles.detailValue}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function addHour(time: string): string {
   const [h, m] = time.split(":").map(Number);
   return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
@@ -319,7 +356,7 @@ export function EventDialog({
     <div className={styles.headline}>
       <span>
         {readOnly
-          ? "Journal entry"
+          ? (block?.title ?? "Journal entry")
           : block
             ? "Edit journal entry"
             : "New journal entry"}
@@ -330,7 +367,98 @@ export function EventDialog({
     </div>
   );
 
-  const body = (
+  // Host's read-only view: a clean summary of what the apprentice entered,
+  // rather than a form full of disabled fields.
+  const dayLoc = initialDayLocation ?? block?.location ?? null;
+  const locationParts = [
+    dayLoc ? LOCATION_LABEL[dayLoc] : null,
+    block?.locationDetail,
+  ].filter(Boolean);
+  const lastAllDay = block
+    ? new Date(block.end.getTime() - 24 * 60 * 60 * 1000)
+    : null;
+  const readOnlyDetails = block ? (
+    <div className={styles.details}>
+      <DetailRow icon="schedule" label="When">
+        {block.allDay
+          ? `All day · ${detailDateFmt.format(block.start)}${
+              lastAllDay &&
+              detailDateFmt.format(lastAllDay) !==
+                detailDateFmt.format(block.start)
+                ? ` – ${detailDateFmt.format(lastAllDay)}`
+                : ""
+            }`
+          : `${detailDateFmt.format(block.start)} · ${detailTimeFmt.format(
+              block.start,
+            )} – ${detailTimeFmt.format(block.end)}`}
+      </DetailRow>
+      {selectedProject && (
+        <DetailRow icon="folder" label="Project">
+          <span className={styles.detailProject}>
+            {selectedProject.icon ? (
+              <md-icon
+                class={styles.chipIcon}
+                style={{ color: selectedProject.color }}
+              >
+                {selectedProject.icon}
+              </md-icon>
+            ) : (
+              <span
+                className={styles.chipDot}
+                style={{ background: selectedProject.color }}
+              />
+            )}
+            {selectedProject.name}
+          </span>
+        </DetailRow>
+      )}
+      {locationParts.length > 0 && (
+        <DetailRow icon="place" label="Location">
+          {locationParts.join(" · ")}
+        </DetailRow>
+      )}
+      {block.description && (
+        <DetailRow icon="notes" label="Description">
+          {block.description}
+        </DetailRow>
+      )}
+      {block.blockerEntries.length > 0 && (
+        <DetailRow icon="report" label="Blockers & solutions">
+          <div className={styles.detailBlockers}>
+            {block.blockerEntries.map((entry, index) => (
+              <div key={index} className={styles.detailBlocker}>
+                <p className="body-medium">{entry.blocker}</p>
+                {entry.solutionSteps && (
+                  <p className={`${styles.detailSolution} body-small`}>
+                    → {entry.solutionSteps}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </DetailRow>
+      )}
+      {block.links.length > 0 && (
+        <DetailRow icon="link" label="Links">
+          <div className={styles.detailLinks}>
+            {block.links.map((link, index) => (
+              <a
+                key={index}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className={styles.detailLink}
+              >
+                {link.url}
+              </a>
+            ))}
+          </div>
+        </DetailRow>
+      )}
+    </div>
+  ) : null;
+
+  const editableBody = (
       <form
         id="event-form"
         className={styles.form}
@@ -793,6 +921,9 @@ export function EventDialog({
         )}
       </form>
   );
+
+  // Hosts see the clean summary; the apprentice sees the editable form.
+  const body = readOnly && readOnlyDetails ? readOnlyDetails : editableBody;
 
   const footer = (
       <div className={styles.actions}>

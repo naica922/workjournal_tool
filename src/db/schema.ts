@@ -94,6 +94,10 @@ export const hostAssignment = pgTable(
     status: text("status", { enum: ["pending", "accepted"] })
       .notNull()
       .default("pending"),
+    // When on, this apprentice must fill their journal daily: each workday
+    // seals at 18:00 and entries added later are flagged late (the default is
+    // the weekly Friday 18:00 seal).
+    dailySubmission: boolean("daily_submission").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [

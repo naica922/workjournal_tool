@@ -25,6 +25,7 @@ import type { DateClickArg } from "@fullcalendar/interaction";
 import {
   createBlock,
   deleteBlock,
+  isDailySubmissionRequired,
   listBlocks,
   listDayLocations,
   rescheduleBlock,
@@ -33,7 +34,7 @@ import {
 } from "@/server/blocks";
 import { listProjects } from "@/server/projects";
 import { DEFAULT_BLOCK_COLOR, type BlockInput } from "@/lib/blocks";
-import { fridayCutoff, isLateEntry } from "@/lib/week";
+import { fridayCutoff, isLateEntry, nextDailyDeadline } from "@/lib/week";
 import type { BlockOccurrence } from "@/lib/recurrence";
 import { EventDialog, type DialogState } from "./event-dialog";
 import styles from "./calendar-view.module.css";
@@ -259,6 +260,11 @@ export function CalendarView({
     queryFn: () => listProjects(ownerId),
   });
 
+  const { data: dailyRequired = false } = useQuery({
+    queryKey: ["daily-submission", ownerKey],
+    queryFn: () => isDailySubmissionRequired(ownerId),
+  });
+
   const { data: dayLocations } = useQuery({
     queryKey: ["day-locations", ownerKey, range?.start.toISOString()],
     enabled: !!range,
@@ -301,8 +307,13 @@ export function CalendarView({
           project?.color ?? occurrence.color ?? DEFAULT_BLOCK_COLOR;
         // Past entries fade to a pastel tint so it is clear what is done.
         const isPast = occurrence.end.getTime() < now;
-        // Late = created/changed after its week's Friday 18:00 deadline.
-        const isLate = isLateEntry(occurrence.updatedAt, occurrence.start);
+        // Late = created/changed after its seal deadline (the day's 18:00 when
+        // daily submission is required, otherwise the week's Friday 18:00).
+        const isLate = isLateEntry(
+          occurrence.updatedAt,
+          occurrence.start,
+          dailyRequired,
+        );
         return {
           id: occurrence.occurrenceId,
           title: occurrence.title,
@@ -359,7 +370,7 @@ export function CalendarView({
       });
     }
     return base;
-  }, [data, projectById, now, dayLocByDate, draft, mode]);
+  }, [data, projectById, now, dayLocByDate, draft, mode, dailyRequired]);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["blocks", ownerKey] });
@@ -592,11 +603,14 @@ export function CalendarView({
     calendarRef.current?.getApi().gotoDate(target);
   }
 
-  // Time left until the weekly seal (this Friday 18:00, or next if past).
-  const deadline = (() => {
-    const base = fridayCutoff(new Date(nowTick)).getTime();
-    return base > nowTick ? base : base + 7 * 24 * 60 * 60 * 1000;
-  })();
+  // Time left until the next seal. With daily submission that is the next
+  // workday 18:00; otherwise this Friday 18:00 (or next week's if past).
+  const deadline = dailyRequired
+    ? nextDailyDeadline(new Date(nowTick)).getTime()
+    : (() => {
+        const base = fridayCutoff(new Date(nowTick)).getTime();
+        return base > nowTick ? base : base + 7 * 24 * 60 * 60 * 1000;
+      })();
   const msLeft = Math.max(0, deadline - nowTick);
   const countdown = (() => {
     const totalMin = Math.floor(msLeft / 60000);
@@ -639,12 +653,16 @@ export function CalendarView({
           </button>
         </div>
         {!readOnly && (
-          <span className={`${styles.submitNote} body-small`}>
-            <md-icon class={styles.submitIcon}>schedule</md-icon>
-            {mode === "plan"
-              ? "Plan next week at a high level. "
-              : ""}
-            Auto-submits Friday 18:00 · {countdown} left
+          <span
+            className={`${dailyRequired ? styles.submitNoteUrgent : styles.submitNote} body-small`}
+          >
+            <md-icon class={styles.submitIcon}>
+              {dailyRequired ? "warning" : "schedule"}
+            </md-icon>
+            {mode === "plan" ? "Plan next week at a high level. " : ""}
+            {dailyRequired
+              ? `Daily submission required by your host — today's entries lock at 18:00 · ${countdown} left`
+              : `Auto-submits Friday 18:00 · ${countdown} left`}
           </span>
         )}
       </div>

@@ -258,6 +258,32 @@ export async function declineInvite(assignmentId: string) {
   return declined;
 }
 
+// Host toggles whether an apprentice must submit their journal daily. Only
+// the accepted host of that assignment may change it.
+export async function setDailySubmission(input: {
+  assignmentId: string;
+  required: boolean;
+}) {
+  const session = await requireSession();
+  const assignmentId = z.uuid().parse(input.assignmentId);
+  const required = z.boolean().parse(input.required);
+  const [updated] = await db
+    .update(hostAssignment)
+    .set({ dailySubmission: required })
+    .where(
+      and(
+        eq(hostAssignment.id, assignmentId),
+        eq(hostAssignment.hostId, session.user.id),
+        eq(hostAssignment.status, "accepted"),
+      ),
+    )
+    .returning({ id: hostAssignment.id, dailySubmission: hostAssignment.dailySubmission });
+  if (!updated) {
+    throw new Error("Apprentice not found");
+  }
+  return updated;
+}
+
 export async function listMyApprentices() {
   const session = await requireSession();
   const apprentices = await db

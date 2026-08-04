@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   dragCreateSlot,
   register,
+  signIn,
   textField,
   uniqueEmail,
 } from "./helpers";
@@ -96,7 +97,12 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
   // Host registers, accepts, and opens the apprentice's calendar.
   await register(page, { name: "E2E Host", email: hostEmail, role: "host" });
   await page.getByRole("link", { name: "My apprentices" }).click();
-  await expect(page.getByText("E2E Apprentice")).toBeVisible();
+  await expect(page.getByText("E2E Apprentice")).toBeVisible({
+    timeout: 15_000,
+  });
+  // Let both the invites and apprentices queries settle so the Accept button
+  // does not detach mid-click when the second query resolves.
+  await page.waitForLoadState("networkidle");
   await page.locator("md-filled-button", { hasText: "Accept" }).click();
   await expect(
     page.locator("md-filled-tonal-button", { hasText: "Inspect" }),
@@ -130,13 +136,35 @@ test("host flow: invited host accepts and sees the apprentice's calendar read-on
   const event = page.locator(".fc-event", { hasText: "Visible to host" });
   await expect(event).toBeVisible({ timeout: 15_000 });
 
-  // Read-only: opening the event shows no save button.
+  // Read-only: opening the event shows a clean summary, not an editable form.
   await event.click();
-  await expect(page.locator('md-dialog, aside[role="dialog"]')).toBeVisible();
+  const detail = page.locator('md-dialog, aside[role="dialog"]');
+  await expect(detail).toBeVisible();
+  // The entry's title is the heading; the details are labelled, read-only.
+  await expect(detail.getByText("Visible to host")).toBeVisible();
+  await expect(detail.getByText("When", { exact: true })).toBeVisible();
+  // No editable title field and no save button.
+  await expect(detail.locator('md-outlined-text-field[name="title"]')).toHaveCount(
+    0,
+  );
   await expect(
     page.locator("md-filled-button", { hasText: "Save" }),
   ).toHaveCount(0);
   await expect(page.locator("md-text-button", { hasText: "Close" })).toBeVisible();
+  await page.locator("md-text-button", { hasText: "Close" }).click();
+
+  // The host turns on daily submission for this apprentice.
+  await page.getByRole("link", { name: "My apprentices" }).click();
+  const dailySwitch = page.locator("md-switch").first();
+  await dailySwitch.click();
+  await expect(dailySwitch).toHaveJSProperty("selected", true);
+
+  // Signing back in as the apprentice, they now see the daily reminder.
+  await page.context().clearCookies();
+  await signIn(page, apprenticeEmail);
+  await expect(page.getByText(/Daily submission required/)).toBeVisible({
+    timeout: 15_000,
+  });
 });
 
 test("projects: assigned events aggregate hours in the projects view", async ({

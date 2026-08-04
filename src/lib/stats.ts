@@ -35,6 +35,7 @@ export function weekStats(
   occurrences: BlockOccurrence[],
   monday: Date,
   dayLoc?: Map<string, "home" | "office">,
+  daily = false,
 ): WeekStats {
   const start = monday.getTime();
   const end = start + 7 * 24 * HOUR_MS;
@@ -48,7 +49,7 @@ export function weekStats(
     const t = occ.start.getTime();
     if (t < start || t >= end) continue;
     entries += 1;
-    if (isLateEntry(occ.updatedAt, occ.start)) late += 1;
+    if (isLateEntry(occ.updatedAt, occ.start, daily)) late += 1;
     if (occ.allDay) continue;
     const h = Math.max(0, (occ.end.getTime() - occ.start.getTime()) / HOUR_MS);
     hours += h;

@@ -7,6 +7,7 @@ import {
   acceptInvite,
   declineInvite,
   listMyInvites,
+  setDailySubmission,
 } from "@/server/settings";
 import { listApprenticeSummaries } from "@/server/stats";
 import { apprenticeshipYear } from "@/lib/apprenticeship";
@@ -26,12 +27,13 @@ import styles from "@/app/settings/settings.module.css";
 function apprenticeWeekStatus(
   blocks: Parameters<typeof expandOccurrences>[0],
   dayLocations: DayLocation[],
+  daily: boolean,
 ) {
   const monday = lastCompletedMonday(new Date());
   const end = new Date(monday);
   end.setDate(end.getDate() + 7);
   const occ = expandOccurrences(blocks, monday, end);
-  const stats = weekStats(occ, monday, dayLocationMap(dayLocations));
+  const stats = weekStats(occ, monday, dayLocationMap(dayLocations), daily);
   return { monday, stats, flags: expectationFlags(stats) };
 }
 
@@ -67,6 +69,12 @@ export function HostDashboard() {
   const declineMutation = useMutation({
     mutationFn: declineInvite,
     onSuccess: invalidate,
+  });
+  const dailyMutation = useMutation({
+    mutationFn: (input: { assignmentId: string; required: boolean }) =>
+      setDailySubmission(input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["my-apprentices"] }),
   });
 
   return (
@@ -115,6 +123,7 @@ export function HostDashboard() {
             const { monday, stats, flags } = apprenticeWeekStatus(
               apprentice.blocks,
               apprentice.dayLocations,
+              apprentice.dailySubmission,
             );
             return (
             <Fragment key={apprentice.assignmentId}>
@@ -146,6 +155,23 @@ export function HostDashboard() {
                     )}
                   </span>
                 </span>
+                <label
+                  className={styles.dailyToggle}
+                  title="Require this apprentice to fill their journal every day. Each workday then locks at 18:00 and later entries are flagged late."
+                >
+                  <md-switch
+                    selected={apprentice.dailySubmission || undefined}
+                    disabled={dailyMutation.isPending}
+                    onInput={(e: React.FormEvent) =>
+                      dailyMutation.mutate({
+                        assignmentId: apprentice.assignmentId,
+                        required: (e.target as unknown as { selected: boolean })
+                          .selected,
+                      })
+                    }
+                  />
+                  <span className="body-small">Daily submission</span>
+                </label>
                 <md-text-button
                   type="button"
                   onClick={() =>
